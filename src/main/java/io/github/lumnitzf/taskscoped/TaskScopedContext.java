@@ -36,6 +36,7 @@ public class TaskScopedContext implements Context {
     }
 
     public TaskId enter(TaskId taskId) {
+        TaskIdManager.set(taskId);
         TaskId previous = delegate.enter(taskId);
         activeTasks.computeIfAbsent(taskId, ignored -> new AtomicInteger(0)).incrementAndGet();
         return previous;
