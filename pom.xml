@@ -64,10 +64,16 @@
         <nexus-staging-maven-plugin.version>1.6.8</nexus-staging-maven-plugin.version>
         <maven-release-plugin.version>2.5.3</maven-release-plugin.version>
 
+        <!-- Framework versions -->
+        <junit5.version>5.5.2</junit5.version>
+
         <!-- Dependency versions -->
         <cdi-api.version>1.2</cdi-api.version>
         <javax.annotation-api.version>1.3.2</javax.annotation-api.version>
         <microscoped-core.version>0.3</microscoped-core.version>
+        <junit-jupiter-api.version>${junit5.version}</junit-jupiter-api.version>
+        <junit-jupiter-engine.version>${junit5.version}</junit-jupiter-engine.version>
+        <weld-junit5.version>1.2.2.Final</weld-junit5.version>
     </properties>
 
     <profiles>
@@ -275,6 +281,24 @@
             <groupId>org.tomitribe</groupId>
             <artifactId>microscoped-core</artifactId>
             <version>${microscoped-core.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-api</artifactId>
+            <version>${junit-jupiter-api.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-engine</artifactId>
+            <version>${junit-jupiter-engine.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.jboss.weld</groupId>
+            <artifactId>weld-junit5</artifactId>
+            <version>${weld-junit5.version}</version>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 </project>
