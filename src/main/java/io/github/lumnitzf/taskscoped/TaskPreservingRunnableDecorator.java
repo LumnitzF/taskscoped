@@ -7,6 +7,7 @@ import javax.enterprise.inject.spi.BeanManager;
 import javax.inject.Inject;
 import javax.interceptor.Interceptor;
 
+@Deprecated // Decorate ManagedExecutorServices
 @Decorator
 @Priority(Interceptor.Priority.LIBRARY_AFTER)
 abstract class TaskPreservingRunnableDecorator implements Runnable {

@@ -8,6 +8,7 @@ import javax.inject.Inject;
 import javax.interceptor.Interceptor;
 import java.util.concurrent.Callable;
 
+@Deprecated // Decorate ManagedExecutorServices
 @Decorator
 @Priority(Interceptor.Priority.LIBRARY_AFTER)
 abstract class TaskPreservingCallableDecorator<T> implements Callable<T> {
