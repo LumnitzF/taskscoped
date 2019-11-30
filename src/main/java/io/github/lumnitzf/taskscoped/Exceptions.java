@@ -22,8 +22,4 @@ class Exceptions {
     static DefinitionException beanNotDependentScoped(Bean<?> bean) {
         return new DefinitionException(bean + " must have scope " + Dependent.class);
     }
-
-    static DefinitionException beanMustNotBeInterceptedWithTaskScopeEnabled(Bean<?> bean) {
-        return new DefinitionException(bean + " must not be intercepted with " + TaskScopeEnabled.class);
-    }
 }
