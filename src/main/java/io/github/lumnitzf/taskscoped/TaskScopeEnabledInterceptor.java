@@ -9,7 +9,7 @@ import javax.interceptor.InvocationContext;
 
 @TaskScopeEnabled
 @Interceptor
-@Priority(Interceptor.Priority.LIBRARY_BEFORE)
+@Priority(Interceptor.Priority.LIBRARY_AFTER)
 public class TaskScopeEnabledInterceptor {
 
     @Inject

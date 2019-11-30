@@ -8,7 +8,7 @@ import javax.inject.Inject;
 import javax.interceptor.Interceptor;
 
 @Decorator
-@Priority(Interceptor.Priority.LIBRARY_BEFORE)
+@Priority(Interceptor.Priority.LIBRARY_AFTER)
 abstract class TaskPreservingRunnableDecorator implements Runnable {
 
     private final TaskId taskId;

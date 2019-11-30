@@ -9,7 +9,7 @@ import javax.interceptor.Interceptor;
 import java.util.concurrent.Callable;
 
 @Decorator
-@Priority(Interceptor.Priority.LIBRARY_BEFORE)
+@Priority(Interceptor.Priority.LIBRARY_AFTER)
 abstract class TaskPreservingCallableDecorator<T> implements Callable<T> {
 
     private final TaskId taskId;
