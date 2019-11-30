@@ -26,7 +26,7 @@ public class TaskIdManager {
         final AtomicReference<TaskId> ref = CURRENT.get();
         TaskId taskId = ref.get();
         if (taskId == null) {
-            taskId = new TaskId();
+            taskId = TaskId.create();
             ref.set(taskId);
         }
         return taskId;

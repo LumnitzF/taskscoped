@@ -1,14 +1,24 @@
 package io.github.lumnitzf.taskscoped;
 
+import javax.enterprise.inject.Vetoed;
 import java.util.Objects;
 import java.util.UUID;
 
+@Vetoed
 public class TaskId {
 
     private final UUID value;
 
-    TaskId() {
+    private TaskId() {
         value = UUID.randomUUID();
+    }
+
+    static TaskId create() {
+        return new TaskId();
+    }
+
+    public UUID getValue() {
+        return value;
     }
 
     @Override
