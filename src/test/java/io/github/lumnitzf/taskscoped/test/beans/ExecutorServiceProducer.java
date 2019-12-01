@@ -1,5 +1,8 @@
 package io.github.lumnitzf.taskscoped.test.beans;
 
+import io.github.lumnitzf.taskscoped.TaskPreserving;
+import io.github.lumnitzf.taskscoped.TaskPreservingExecutorServiceDecorator;
+
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.context.Dependent;
 import javax.enterprise.inject.Disposes;
@@ -12,11 +15,12 @@ public class ExecutorServiceProducer {
 
     @Produces
     @Dependent
+    @TaskPreserving
     ExecutorService getExecutorService() {
-        return Executors.newSingleThreadExecutor();
+        return TaskPreservingExecutorServiceDecorator.decorate(Executors.newSingleThreadExecutor());
     }
 
-    void destroyExecutorService(@Disposes ExecutorService service) {
+    void destroyExecutorService(@Disposes @TaskPreserving ExecutorService service) {
         service.shutdown();
     }
 }

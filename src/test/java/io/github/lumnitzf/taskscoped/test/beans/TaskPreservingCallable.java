@@ -7,7 +7,7 @@ import javax.enterprise.context.Dependent;
 import java.util.concurrent.Callable;
 
 @Dependent
-@TaskPreserving
+//@TaskPreserving
 public class TaskPreservingCallable extends BaseTaskPreserving implements Callable<TaskId> {
 
     @Override

@@ -16,7 +16,6 @@ import java.util.concurrent.Future;
 public class RequestScopedRunner {
 
     @Inject
-    @TaskPreserving
     private TaskPreservingRunnable runnable;
 
     @Inject
@@ -26,6 +25,7 @@ public class RequestScopedRunner {
     private TaskIdHolder holder;
 
     @Inject
+    @TaskPreserving
     private ExecutorService service;
 
     public void doRun() throws ExecutionException, InterruptedException {

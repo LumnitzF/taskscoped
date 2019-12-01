@@ -4,26 +4,32 @@ import javax.annotation.Priority;
 import javax.decorator.Decorator;
 import javax.decorator.Delegate;
 import javax.enterprise.inject.spi.BeanManager;
+import javax.enterprise.inject.spi.CDI;
 import javax.inject.Inject;
 import javax.interceptor.Interceptor;
+import java.util.Objects;
 
-@Deprecated // Decorate ManagedExecutorServices
 @Decorator
 @Priority(Interceptor.Priority.LIBRARY_AFTER)
-abstract class TaskPreservingRunnableDecorator implements Runnable {
+public abstract class TaskPreservingRunnableDecorator implements Runnable {
 
     private final TaskId taskId;
 
-    @Inject
-    private BeanManager beanManager;
+    private final BeanManager beanManager;
+
+    private final Runnable delegate;
 
     @Inject
-    @Delegate
-    @TaskPreserving
-    private Runnable delegate;
+    TaskPreservingRunnableDecorator(BeanManager beanManager, @Delegate @TaskPreserving Runnable delegate) {
+        this.taskId = TaskIdManager.get().orElseThrow(Exceptions::taskScopeNotActive);
+        this.beanManager = beanManager;
+        this.delegate = delegate;
+    }
 
-    TaskPreservingRunnableDecorator() {
-        this.taskId = TaskIdManager.getOrCreate();
+    public static Runnable decorate(Runnable delegate) {
+        Objects.requireNonNull(delegate);
+        return new TaskPreservingRunnableDecorator(CDI.current().getBeanManager(), delegate) {
+        };
     }
 
     @Override

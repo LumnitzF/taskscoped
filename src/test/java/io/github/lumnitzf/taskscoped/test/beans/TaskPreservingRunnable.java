@@ -6,7 +6,7 @@ import javax.enterprise.context.Dependent;
 import javax.inject.Inject;
 
 @Dependent
-@TaskPreserving
+//@TaskPreserving
 public class TaskPreservingRunnable extends BaseTaskPreserving implements Runnable {
 
     @Inject

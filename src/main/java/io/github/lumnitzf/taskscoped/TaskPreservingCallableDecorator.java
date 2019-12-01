@@ -4,27 +4,33 @@ import javax.annotation.Priority;
 import javax.decorator.Decorator;
 import javax.decorator.Delegate;
 import javax.enterprise.inject.spi.BeanManager;
+import javax.enterprise.inject.spi.CDI;
 import javax.inject.Inject;
 import javax.interceptor.Interceptor;
+import java.util.Objects;
 import java.util.concurrent.Callable;
 
-@Deprecated // Decorate ManagedExecutorServices
 @Decorator
 @Priority(Interceptor.Priority.LIBRARY_AFTER)
-abstract class TaskPreservingCallableDecorator<T> implements Callable<T> {
+public abstract class TaskPreservingCallableDecorator<T> implements Callable<T> {
 
     private final TaskId taskId;
 
-    @Inject
-    private BeanManager beanManager;
+    private final BeanManager beanManager;
+
+    private final Callable<T> delegate;
 
     @Inject
-    @Delegate
-    @TaskPreserving
-    private Callable<T> delegate;
+    TaskPreservingCallableDecorator(BeanManager beanManager, @Delegate @TaskPreserving Callable<T> delegate) {
+        this.taskId = TaskIdManager.get().orElseThrow(Exceptions::taskScopeNotActive);
+        this.beanManager = beanManager;
+        this.delegate = delegate;
+    }
 
-    TaskPreservingCallableDecorator() {
-        this.taskId = TaskIdManager.getOrCreate();
+    public static <T> Callable<T> decorate(Callable<T> delegate) {
+        Objects.requireNonNull(delegate);
+        return new TaskPreservingCallableDecorator<T>(CDI.current().getBeanManager(), delegate) {
+        };
     }
 
     @Override
