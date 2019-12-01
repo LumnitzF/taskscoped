@@ -3,6 +3,7 @@ package io.github.lumnitzf.taskscoped;
 import javax.annotation.Priority;
 import javax.decorator.Decorator;
 import javax.decorator.Delegate;
+import javax.enterprise.inject.spi.BeanManager;
 import javax.inject.Inject;
 import javax.interceptor.Interceptor;
 import java.util.Collection;
@@ -13,58 +14,31 @@ import java.util.stream.Collectors;
 
 @Decorator
 @Priority(Interceptor.Priority.LIBRARY_AFTER)
-public abstract class TaskPreservingExecutorServiceDecorator implements ExecutorService {
+public class TaskPreservingExecutorServiceDecorator implements ExecutorService {
+
+    private final BeanManager beanManager;
 
     private final ExecutorService delegate;
 
     @Inject
-    TaskPreservingExecutorServiceDecorator(@Delegate @TaskPreserving ExecutorService delegate) {
-        this.delegate = delegate;
-    }
-
-    public static ExecutorService decorate(ExecutorService delegate) {
-        Objects.requireNonNull(delegate);
-        return new TaskPreservingExecutorServiceDecorator(delegate) {
-            @Override
-            public void shutdown() {
-                delegate.shutdown();
-            }
-
-            @Override
-            public List<Runnable> shutdownNow() {
-                return delegate.shutdownNow();
-            }
-
-            @Override
-            public boolean isShutdown() {
-                return delegate.isShutdown();
-            }
-
-            @Override
-            public boolean isTerminated() {
-                return delegate.isTerminated();
-            }
-
-            @Override
-            public boolean awaitTermination(long timeout, TimeUnit unit) throws InterruptedException {
-                return delegate.awaitTermination(timeout, unit);
-            }
-        };
+    protected TaskPreservingExecutorServiceDecorator(BeanManager beanManager, @Delegate @TaskPreserving ExecutorService delegate) {
+        this.beanManager = Objects.requireNonNull(beanManager, "beanManager");
+        this.delegate = Objects.requireNonNull(delegate, "delegate");
     }
 
     @Override
     public <T> Future<T> submit(Callable<T> task) {
-        return delegate.submit(TaskPreservingCallableDecorator.decorate(task));
+        return delegate.submit(new TaskPreservingCallableDecorator<>(beanManager, task));
     }
 
     @Override
     public <T> Future<T> submit(Runnable task, T result) {
-        return delegate.submit(TaskPreservingRunnableDecorator.decorate(task), result);
+        return delegate.submit(new TaskPreservingRunnableDecorator(beanManager, task), result);
     }
 
     @Override
     public Future<?> submit(Runnable task) {
-        return delegate.submit(TaskPreservingRunnableDecorator.decorate(task));
+        return delegate.submit(new TaskPreservingRunnableDecorator(beanManager, task));
     }
 
     @Override
@@ -92,11 +66,38 @@ public abstract class TaskPreservingExecutorServiceDecorator implements Executor
     }
 
     private <T> Collection<? extends Callable<T>> decorate(Collection<? extends Callable<T>> tasks) {
-        return tasks.stream().map(TaskPreservingCallableDecorator::decorate).collect(Collectors.toList());
+        return tasks.stream().map(decorated -> new TaskPreservingCallableDecorator<>(beanManager, decorated)).collect(Collectors.toList());
     }
 
     @Override
     public void execute(Runnable command) {
-        delegate.execute(TaskPreservingRunnableDecorator.decorate(command));
+        delegate.execute(new TaskPreservingRunnableDecorator(beanManager, command));
+    }
+
+    // Only delegated methods without changed behavior
+
+    @Override
+    public void shutdown() {
+        delegate.shutdown();
+    }
+
+    @Override
+    public List<Runnable> shutdownNow() {
+        return delegate.shutdownNow();
+    }
+
+    @Override
+    public boolean isShutdown() {
+        return delegate.isShutdown();
+    }
+
+    @Override
+    public boolean isTerminated() {
+        return delegate.isTerminated();
+    }
+
+    @Override
+    public boolean awaitTermination(long timeout, TimeUnit unit) throws InterruptedException {
+        return delegate.awaitTermination(timeout, unit);
     }
 }

@@ -4,7 +4,7 @@ import javax.enterprise.context.ContextNotActiveException;
 import javax.enterprise.context.Dependent;
 import javax.enterprise.inject.spi.Bean;
 import javax.enterprise.inject.spi.DefinitionException;
-import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
 
 class Exceptions {
 
@@ -15,8 +15,8 @@ class Exceptions {
         return new ContextNotActiveException("TaskScope is not active");
     }
 
-    static DefinitionException beanNotOfTypeRunnableOrCallable(Bean<?> bean) {
-        return new DefinitionException(bean + " must be of type " + Runnable.class + " or " + Callable.class);
+    static DefinitionException beanNotOfTypeExecutorService(Bean<?> bean) {
+        return new DefinitionException(bean + " must be of type " + ExecutorService.class);
     }
 
     static DefinitionException beanNotDependentScoped(Bean<?> bean) {

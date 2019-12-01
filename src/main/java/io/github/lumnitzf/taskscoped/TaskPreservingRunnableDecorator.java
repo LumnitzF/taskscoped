@@ -1,17 +1,9 @@
 package io.github.lumnitzf.taskscoped;
 
-import javax.annotation.Priority;
-import javax.decorator.Decorator;
-import javax.decorator.Delegate;
 import javax.enterprise.inject.spi.BeanManager;
-import javax.enterprise.inject.spi.CDI;
-import javax.inject.Inject;
-import javax.interceptor.Interceptor;
 import java.util.Objects;
 
-@Decorator
-@Priority(Interceptor.Priority.LIBRARY_AFTER)
-public abstract class TaskPreservingRunnableDecorator implements Runnable {
+class TaskPreservingRunnableDecorator implements Runnable {
 
     private final TaskId taskId;
 
@@ -19,17 +11,12 @@ public abstract class TaskPreservingRunnableDecorator implements Runnable {
 
     private final Runnable delegate;
 
-    @Inject
-    TaskPreservingRunnableDecorator(BeanManager beanManager, @Delegate @TaskPreserving Runnable delegate) {
+    TaskPreservingRunnableDecorator(BeanManager beanManager, Runnable delegate) {
+        Objects.requireNonNull(beanManager, "beanManager");
+        Objects.requireNonNull(delegate, "delegate");
         this.taskId = TaskIdManager.get().orElseThrow(Exceptions::taskScopeNotActive);
         this.beanManager = beanManager;
         this.delegate = delegate;
-    }
-
-    public static Runnable decorate(Runnable delegate) {
-        Objects.requireNonNull(delegate);
-        return new TaskPreservingRunnableDecorator(CDI.current().getBeanManager(), delegate) {
-        };
     }
 
     @Override
