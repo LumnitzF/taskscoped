@@ -2,9 +2,13 @@ package io.github.lumnitzf.taskscoped;
 
 import org.tomitribe.microscoped.core.ScopeContext;
 
+import javax.enterprise.context.Destroyed;
+import javax.enterprise.context.Initialized;
 import javax.enterprise.context.spi.Context;
 import javax.enterprise.context.spi.Contextual;
 import javax.enterprise.context.spi.CreationalContext;
+import javax.enterprise.inject.spi.CDI;
+import javax.enterprise.util.AnnotationLiteral;
 import java.lang.annotation.Annotation;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -59,7 +63,16 @@ public class TaskScopedContext implements Context {
     public TaskId enter(TaskId taskId) {
         TaskIdManager.set(taskId);
         TaskId previous = delegate.enter(taskId);
-        currentRunningCount.computeIfAbsent(taskId, ignored -> new AtomicInteger(0)).incrementAndGet();
+
+        // Hack to know that the supplier was called, to fire the initialized event outside of the synchronized block
+        final boolean[] created = {false};
+        currentRunningCount.computeIfAbsent(taskId, ignored -> {
+            created[0] = true;
+            return new AtomicInteger(0);
+        }).incrementAndGet();
+        if (created[0]) {
+            CDI.current().getBeanManager().fireEvent(taskId, new InitializedLiteral(TaskScoped.class));
+        }
         return previous;
     }
 
@@ -87,11 +100,52 @@ public class TaskScopedContext implements Context {
             //      pre-registered tasks are executed
             currentRunningCount.remove(taskId);
             delegate.destroy(taskId);
+            CDI.current().getBeanManager().fireEvent(taskId, new DestroyedLiteral(TaskScoped.class));
         }
         if (previous != null) {
             TaskIdManager.set(previous);
         } else {
             TaskIdManager.remove();
+        }
+    }
+
+
+    /**
+     * Supports inline instantiation of the {@link Initialized} qualifier.
+     *
+     * @author Fritz Lumnitz
+     */
+    // Literal implementation pre CDI 2.0
+    private static class InitializedLiteral extends AnnotationLiteral<Initialized> implements Initialized {
+        private final Class<? extends Annotation> value;
+
+        private InitializedLiteral(Class<? extends Annotation> value) {
+            this.value = value;
+        }
+
+        @Override
+        public Class<? extends Annotation> value() {
+            return value;
+        }
+    }
+
+    /**
+     * Supports inline instantiation of the {@link Destroyed} qualifier.
+     *
+     * @author Fritz Lumnitz
+     */
+    // Literal implementation pre CDI 2.0
+    private static class DestroyedLiteral extends AnnotationLiteral<Destroyed> implements Destroyed {
+
+        private final Class<? extends Annotation> value;
+
+        private DestroyedLiteral(Class<? extends Annotation> value) {
+            this.value = value;
+        }
+
+        @Override
+        public Class<? extends Annotation> value() {
+            return value;
         }
     }
 }

@@ -4,6 +4,7 @@ import io.github.lumnitzf.taskscoped.test.beans.ExecutorServiceProducer;
 import io.github.lumnitzf.taskscoped.test.beans.RequestScopedRunner;
 import io.github.lumnitzf.taskscoped.test.beans.TaskIdHolder;
 import io.github.lumnitzf.taskscoped.test.beans.TaskPreservingRunnable;
+import io.github.lumnitzf.taskscoped.test.beans.TaskScopeObserver;
 import org.junit.jupiter.api.Test;
 
 import javax.enterprise.context.ApplicationScoped;
@@ -20,7 +21,7 @@ class SimpleTest extends AbstractTaskScopedExtensionTest {
     @Override
     Collection<Class<?>> getBeanClasses() {
         return Arrays.asList(TaskIdHolder.class, TaskPreservingRunnable.class, RequestScopedRunner.class,
-                ExecutorServiceProducer.class);
+                ExecutorServiceProducer.class, TaskScopeObserver.class);
     }
 
     @Override
