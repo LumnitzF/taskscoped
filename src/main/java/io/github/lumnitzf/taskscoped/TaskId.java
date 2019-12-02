@@ -1,10 +1,8 @@
 package io.github.lumnitzf.taskscoped;
 
-import javax.enterprise.inject.Vetoed;
 import java.util.Objects;
 import java.util.UUID;
 
-@Vetoed
 public class TaskId {
 
     private final UUID value;

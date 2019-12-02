@@ -1,6 +1,7 @@
 package io.github.lumnitzf.taskscoped.test;
 
 import io.github.lumnitzf.taskscoped.TaskScopedExtension;
+import org.jboss.weld.bootstrap.spi.BeanDiscoveryMode;
 import org.jboss.weld.environment.se.Weld;
 import org.jboss.weld.junit5.EnableWeld;
 import org.jboss.weld.junit5.WeldInitiator;
@@ -18,7 +19,7 @@ abstract class AbstractTaskScopedExtensionTest {
     private WeldInitiator createWeld() {
         final Weld weld = WeldInitiator.createWeld();
         weld.addPackage(false, TaskScopedExtension.class);
-        //weld.addBeanClass(TaskIdManager.class);
+        weld.setBeanDiscoveryMode(BeanDiscoveryMode.ANNOTATED);
         getBeanClasses().forEach(weld::addBeanClass);
         weld.addExtension(new TaskScopedExtension());
         customizeWeld(weld);
