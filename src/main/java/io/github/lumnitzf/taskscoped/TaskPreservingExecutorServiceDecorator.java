@@ -17,13 +17,26 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 
+/**
+ * {@link TaskPreserving} decorator for {@link ExecutorService}. <br>
+ * Wraps all provided {@link Runnable} and {@link Callable} to be executed in the same TaskScope as the invoker Thread.
+ * Subclasses may use the various {@code decorate(...)} methods to achive the same behavior.
+ *
+ * @author Fritz Lumnitz
+ */
 @Decorator
 @Priority(Interceptor.Priority.LIBRARY_AFTER)
 public class TaskPreservingExecutorServiceDecorator implements ExecutorService {
 
-    private final BeanManager beanManager;
+    /**
+     * The {@link BeanManager} required by the applied decorators.
+     */
+    protected final BeanManager beanManager;
 
-    private final ExecutorService delegate;
+    /**
+     * The decorated {@link TaskPreserving} delegate.
+     */
+    protected final ExecutorService delegate;
 
     @Inject
     protected TaskPreservingExecutorServiceDecorator(BeanManager beanManager,
@@ -69,21 +82,40 @@ public class TaskPreservingExecutorServiceDecorator implements ExecutorService {
         return delegate.invokeAny(decorate(tasks), timeout, unit);
     }
 
-    private Runnable decorate(Runnable runnable) {
-        return runnable == null ? null : new TaskPreservingRunnableDecorator(beanManager, runnable);
-    }
-
-    private <V> Callable<V> decorate(Callable<V> callable) {
-        return callable == null ? null : new TaskPreservingCallableDecorator<>(beanManager, callable);
-    }
-
-    private <T> Collection<? extends Callable<T>> decorate(Collection<? extends Callable<T>> tasks) {
-        return tasks == null ? null : tasks.stream().map(this::decorate).collect(Collectors.toList());
-    }
-
     @Override
     public void execute(Runnable command) {
         delegate.execute(new TaskPreservingRunnableDecorator(beanManager, command));
+    }
+
+    /**
+     * Decorates the provided {@link Runnable} to be executed in the same TaskScope as this method invocation.
+     *
+     * @param runnable The Runnable to decorate.
+     * @return The decorated Runnable, {@code null} if {@code runnable} was {@code null}
+     */
+    protected Runnable decorate(Runnable runnable) {
+        return runnable == null ? null : new TaskPreservingRunnableDecorator(beanManager, runnable);
+    }
+
+    /**
+     * Decorates the provided {@link Callable} to be executed in the same TaskScope as this method invocation.
+     *
+     * @param callable The Callable to decorate.
+     * @return The decorated Callable, {@code null} if {@code callable} was {@code null}
+     */
+    protected <V> Callable<V> decorate(Callable<V> callable) {
+        return callable == null ? null : new TaskPreservingCallableDecorator<>(beanManager, callable);
+    }
+
+    /**
+     * Decorates all the provided {@link Callable} to be executed in the same TaskScope as this method invocation.
+     * {@code null} instances in the collection also be present in the resulting collection.
+     *
+     * @param tasks The collection of callable to decorate.
+     * @return Collection of decorated tasks, {@code null} if {@code tasks} was {@code null}.
+     */
+    protected <T> Collection<? extends Callable<T>> decorate(Collection<? extends Callable<T>> tasks) {
+        return tasks == null ? null : tasks.stream().map(this::decorate).collect(Collectors.toList());
     }
 
     // Only delegated methods without changed behavior

@@ -7,10 +7,15 @@ import javax.interceptor.AroundInvoke;
 import javax.interceptor.Interceptor;
 import javax.interceptor.InvocationContext;
 
+/**
+ * Interceptor implementation for {@link TaskScopeEnabled}.
+ *
+ * @author Fritz Lumnitz
+ */
 @TaskScopeEnabled
 @Interceptor
 @Priority(Interceptor.Priority.LIBRARY_AFTER)
-public class TaskScopeEnabledInterceptor {
+class TaskScopeEnabledInterceptor {
 
     @Inject
     private BeanManager beanManager;

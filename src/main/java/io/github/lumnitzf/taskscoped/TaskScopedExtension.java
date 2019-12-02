@@ -3,29 +3,45 @@ package io.github.lumnitzf.taskscoped;
 import javax.enterprise.concurrent.ManagedExecutorService;
 import javax.enterprise.context.spi.CreationalContext;
 import javax.enterprise.event.Observes;
-import javax.enterprise.inject.spi.*;
+import javax.enterprise.inject.spi.AfterBeanDiscovery;
+import javax.enterprise.inject.spi.BeanManager;
+import javax.enterprise.inject.spi.BeforeBeanDiscovery;
+import javax.enterprise.inject.spi.Extension;
+import javax.enterprise.inject.spi.InjectionPoint;
+import javax.enterprise.inject.spi.ProcessProducer;
+import javax.enterprise.inject.spi.Producer;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Function;
 
-public class TaskScopedExtension implements Extension {
+/**
+ * Extension providing the behavior defined by {@link TaskScoped} and {@link TaskPreserving}.
+ *
+ * @author Fritz Lumnitz
+ */
+class TaskScopedExtension implements Extension {
 
-    public void beforeBeanDiscovery(@Observes BeforeBeanDiscovery bbd) {
+    void beforeBeanDiscovery(@Observes BeforeBeanDiscovery bbd) {
         bbd.addScope(TaskScoped.class, true, false);
     }
 
-    public void processExecutorServiceProducer(@Observes ProcessProducer<?, ExecutorService> pp, BeanManager beanManager) {
-        if (pp.getAnnotatedMember().isAnnotationPresent(TaskPreserving.class))
-            pp.setProducer(new DelegateProducer<>(pp.getProducer(), delegate -> new TaskPreservingExecutorServiceDecorator(beanManager, delegate)));
+    void processExecutorServiceProducer(@Observes ProcessProducer<?, ExecutorService> pp, BeanManager beanManager) {
+        if (pp.getAnnotatedMember().isAnnotationPresent(TaskPreserving.class)) {
+            pp.setProducer(new DelegateProducer<>(pp.getProducer(),
+                    delegate -> new TaskPreservingExecutorServiceDecorator(beanManager, delegate)));
+        }
     }
 
-    public void processManagedExecutorServiceProducer(@Observes ProcessProducer<?, ManagedExecutorService> pp, BeanManager beanManager) {
-        if (pp.getAnnotatedMember().isAnnotationPresent(TaskPreserving.class))
-            pp.setProducer(new DelegateProducer<>(pp.getProducer(), delegate -> new TaskPreservingManagedExecutorServiceDecorator(beanManager, delegate)));
+    void processManagedExecutorServiceProducer(@Observes ProcessProducer<?, ManagedExecutorService> pp,
+                                               BeanManager beanManager) {
+        if (pp.getAnnotatedMember().isAnnotationPresent(TaskPreserving.class)) {
+            pp.setProducer(new DelegateProducer<>(pp.getProducer(),
+                    delegate -> new TaskPreservingManagedExecutorServiceDecorator(beanManager, delegate)));
+        }
     }
 
-    public void afterBeanDiscovery(@Observes AfterBeanDiscovery abd) {
+    void afterBeanDiscovery(@Observes AfterBeanDiscovery abd) {
         abd.addContext(new TaskScopedContext());
     }
 

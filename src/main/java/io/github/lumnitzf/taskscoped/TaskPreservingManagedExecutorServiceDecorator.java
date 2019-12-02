@@ -5,9 +5,11 @@ import javax.enterprise.inject.spi.BeanManager;
 import java.util.concurrent.ExecutorService;
 
 /**
- * Class used as type safe decorator for {@link ManagedExecutorService}.
+ * Class used as type safe decorator implementation for {@link ManagedExecutorService}. Adds no additional
+ * implementation to {@link TaskPreservingExecutorServiceDecorator}.
  * <p>
- * Is not registered as decorator via @{@link javax.decorator.Decorator @Decorator} because the superclass will also be present.
+ * Is not registered as decorator via @{@link javax.decorator.Decorator @Decorator} because the superclass will also be
+ * present and this will lead to both decorators being present.
  * Is used for automatic wrapping the result of producer methods for {@link ManagedExecutorService}.
  * </p>
  */

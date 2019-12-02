@@ -11,6 +11,11 @@ import static java.lang.annotation.ElementType.METHOD;
 import static java.lang.annotation.ElementType.TYPE;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
+/**
+ * Enables the TaskScope.
+ *
+ * @author Fritz Lumnitz
+ */
 @Target({TYPE, METHOD})
 @Retention(RUNTIME)
 @Documented
@@ -18,6 +23,9 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 @Inherited
 public @interface TaskScopeEnabled {
 
+    /**
+     * Supports inline instantiation of the {@link TaskScopeEnabled} interceptor binding.
+     */
     class Literal extends AnnotationLiteral<TaskScopeEnabled> implements TaskScopeEnabled {
 
         public static final Literal INSTANCE = new Literal();
