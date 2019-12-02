@@ -9,7 +9,12 @@ import javax.interceptor.Interceptor;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.*;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 
 @Decorator
@@ -21,52 +26,59 @@ public class TaskPreservingExecutorServiceDecorator implements ExecutorService {
     private final ExecutorService delegate;
 
     @Inject
-    protected TaskPreservingExecutorServiceDecorator(BeanManager beanManager, @Delegate @TaskPreserving ExecutorService delegate) {
+    protected TaskPreservingExecutorServiceDecorator(BeanManager beanManager,
+                                                     @Delegate @TaskPreserving ExecutorService delegate) {
         this.beanManager = Objects.requireNonNull(beanManager, "beanManager");
         this.delegate = Objects.requireNonNull(delegate, "delegate");
     }
 
     @Override
     public <T> Future<T> submit(Callable<T> task) {
-        return delegate.submit(new TaskPreservingCallableDecorator<>(beanManager, task));
+        return delegate.submit(decorate(task));
     }
 
     @Override
     public <T> Future<T> submit(Runnable task, T result) {
-        return delegate.submit(new TaskPreservingRunnableDecorator(beanManager, task), result);
+        return delegate.submit(decorate(task), result);
     }
 
     @Override
     public Future<?> submit(Runnable task) {
-        return delegate.submit(new TaskPreservingRunnableDecorator(beanManager, task));
+        return delegate.submit(decorate(task));
     }
 
     @Override
     public <T> List<Future<T>> invokeAll(Collection<? extends Callable<T>> tasks) throws InterruptedException {
-        Collection<? extends Callable<T>> decoratedTasks = decorate(tasks);
-        return delegate.invokeAll(decoratedTasks);
+        return delegate.invokeAll(decorate(tasks));
     }
 
     @Override
-    public <T> List<Future<T>> invokeAll(Collection<? extends Callable<T>> tasks, long timeout, TimeUnit unit) throws InterruptedException {
-        Collection<? extends Callable<T>> decoratedTasks = decorate(tasks);
-        return delegate.invokeAll(decoratedTasks, timeout, unit);
+    public <T> List<Future<T>> invokeAll(Collection<? extends Callable<T>> tasks, long timeout,
+                                         TimeUnit unit) throws InterruptedException {
+        return delegate.invokeAll(decorate(tasks), timeout, unit);
     }
 
     @Override
     public <T> T invokeAny(Collection<? extends Callable<T>> tasks) throws InterruptedException, ExecutionException {
-        Collection<? extends Callable<T>> decoratedTasks = decorate(tasks);
-        return delegate.invokeAny(decoratedTasks);
+        return delegate.invokeAny(decorate(tasks));
     }
 
     @Override
-    public <T> T invokeAny(Collection<? extends Callable<T>> tasks, long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {
-        Collection<? extends Callable<T>> decoratedTasks = decorate(tasks);
-        return delegate.invokeAny(decoratedTasks, timeout, unit);
+    public <T> T invokeAny(Collection<? extends Callable<T>> tasks, long timeout,
+                           TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {
+        return delegate.invokeAny(decorate(tasks), timeout, unit);
+    }
+
+    private Runnable decorate(Runnable runnable) {
+        return runnable == null ? null : new TaskPreservingRunnableDecorator(beanManager, runnable);
+    }
+
+    private <V> Callable<V> decorate(Callable<V> callable) {
+        return callable == null ? null : new TaskPreservingCallableDecorator<>(beanManager, callable);
     }
 
     private <T> Collection<? extends Callable<T>> decorate(Collection<? extends Callable<T>> tasks) {
-        return tasks.stream().map(decorated -> new TaskPreservingCallableDecorator<>(beanManager, decorated)).collect(Collectors.toList());
+        return tasks == null ? null : tasks.stream().map(this::decorate).collect(Collectors.toList());
     }
 
     @Override
