@@ -20,7 +20,7 @@ import java.util.function.Function;
  *
  * @author Fritz Lumnitz
  */
-class TaskScopedExtension implements Extension {
+public class TaskScopedExtension implements Extension {
 
     void beforeBeanDiscovery(@Observes BeforeBeanDiscovery bbd) {
         bbd.addScope(TaskScoped.class, true, false);
