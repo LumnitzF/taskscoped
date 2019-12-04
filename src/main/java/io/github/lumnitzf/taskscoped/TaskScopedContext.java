@@ -62,17 +62,28 @@ public class TaskScopedContext implements Context {
     public TaskId enter(TaskId taskId) {
         TaskIdManager.set(taskId);
         TaskId previous = delegate.enter(taskId);
-
-        // Hack to know that the supplier was called, to fire the initialized event outside of the synchronized block
-        final boolean[] created = {false};
-        currentRunningCount.computeIfAbsent(taskId, ignored -> {
-            created[0] = true;
-            return new AtomicInteger(0);
-        }).incrementAndGet();
-        if (created[0]) {
+        if (isCreated(taskId)) {
             CDI.current().getBeanManager().fireEvent(taskId, new InitializedLiteral(TaskScoped.class));
         }
         return previous;
+    }
+
+    /**
+     * Increments the currentRunningCount for the provided {@code taskId}, creating the counter if not already present.
+     *
+     * @param taskId TaskId to increment the usage
+     * @return {@code true} if the counter for the {@code taskId} was created.
+     */
+    private boolean isCreated(TaskId taskId) {
+        // Hack to know that the supplier was called, to fire the initialized event outside of the synchronized block
+        final boolean[] created = {false};
+        synchronized (taskId.lock) {
+            currentRunningCount.computeIfAbsent(taskId, ignored -> {
+                created[0] = true;
+                return new AtomicInteger(0);
+            }).incrementAndGet();
+        }
+        return created[0];
     }
 
     /**
@@ -92,16 +103,7 @@ public class TaskScopedContext implements Context {
     public void exit(TaskId previous) {
         final TaskId taskId = TaskIdManager.get().orElseThrow(Exceptions::taskScopeNotActive);
         delegate.exit(previous);
-        // TODO: I don't think this is entirely thread safe, as the value may be decremented by this call,
-        //  but immediately afterwards be incremented again by another thread entering the context.
-        //  Then the context will be destroyed even though another thread is still using it
-        if (currentRunningCount.get(taskId).decrementAndGet() == 0) {
-            // TODO: currently the TaskScope may be destroyed, if a runnable etc. is scheduled but not yet executed and
-            //  the scheduling task scope is left.
-            //  --> Implement some sort of pre-registering on creation of delegates and do not destroy until all
-            //      pre-registered tasks are executed
-            currentRunningCount.remove(taskId);
-            delegate.destroy(taskId);
+        if (isDestroyed(taskId)) {
             CDI.current().getBeanManager().fireEvent(taskId, new DestroyedLiteral(TaskScoped.class));
         }
         if (previous != null) {
@@ -109,6 +111,29 @@ public class TaskScopedContext implements Context {
         } else {
             TaskIdManager.remove();
         }
+    }
+
+    /**
+     * Decrements the currentRunningCount for the provided {@code taskId}, removing the counter if it is the last
+     * invocation.
+     *
+     * @param taskId TaskId to decrement the usage for
+     * @return {@code true} if the counter for the {@code taskId} was destroyed.
+     */
+    private boolean isDestroyed(TaskId taskId) {
+        boolean destroyed = false;
+        synchronized (taskId.lock) {
+            if (currentRunningCount.get(taskId).decrementAndGet() == 0) {
+                // TODO: currently the TaskScope may be destroyed, if a runnable etc. is scheduled but not yet executed and
+                //  the scheduling task scope is left.
+                //  --> Implement some sort of pre-registering on creation of delegates and do not destroy until all
+                //      pre-registered tasks are executed
+                currentRunningCount.remove(taskId);
+                delegate.destroy(taskId);
+                destroyed = true;
+            }
+        }
+        return destroyed;
     }
 
 

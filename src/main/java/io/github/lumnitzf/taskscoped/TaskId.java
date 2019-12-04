@@ -14,6 +14,12 @@ import java.util.UUID;
 public class TaskId {
 
     /**
+     * A lock for internal synchronization on the TaskId.
+     */
+    // User Applications may synchronize on the TaskId directly, which we don't want to interfere with our internal synchronization
+    final Object lock = new Object();
+
+    /**
      * The {@link UUID} identifying this TaskId
      */
     private final UUID value;
