@@ -73,7 +73,9 @@ public class TaskScopedContext implements Context {
 
     @Override
     public boolean isActive() {
-        return delegate.isActive();
+        // Bug in microscoped-core, that scope is always active
+        // return delegate.isActive();
+        return TaskIdManager.get().isPresent();
     }
 
     /**
