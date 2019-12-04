@@ -1,6 +1,5 @@
 package io.github.lumnitzf.taskscoped;
 
-import javax.enterprise.inject.spi.BeanManager;
 import java.util.Objects;
 
 /**
@@ -18,27 +17,40 @@ class TaskPreservingRunnableDecorator implements Runnable {
     private final TaskId taskId;
 
     /**
-     * BeanManager to acquire the {@link TaskScopedContext} when being executed.
+     * The {@link TaskScopedContext} to enter and exit.
      */
-    private final BeanManager beanManager;
+    private final TaskScopedContext context;
 
     /**
      * The delegate {@link #run()} is wrapped for
      */
     private final Runnable delegate;
 
-    TaskPreservingRunnableDecorator(BeanManager beanManager, Runnable delegate) {
-        Objects.requireNonNull(beanManager, "beanManager");
+    /**
+     * Flag indicating if the delegate should be {@link TaskScopedContext#unregister(TaskId, Object) unregistered}
+     * before its execution.
+     */
+    private final boolean unregisterOnExecution;
+
+    TaskPreservingRunnableDecorator(TaskScopedContext context, Runnable delegate, boolean registerOnCreation,
+                                    boolean unregisterOnExecution) {
+        Objects.requireNonNull(context, "context");
         Objects.requireNonNull(delegate, "delegate");
         this.taskId = TaskIdManager.get().orElseThrow(Exceptions::taskScopeNotActive);
-        this.beanManager = beanManager;
+        this.context = context;
         this.delegate = delegate;
+        this.unregisterOnExecution = unregisterOnExecution;
+        if (registerOnCreation) {
+            context.register(taskId, delegate);
+        }
     }
 
     @Override
     public void run() {
-        final TaskScopedContext context = (TaskScopedContext) beanManager.getContext(TaskScoped.class);
         final TaskId previous = context.enter(taskId);
+        if (unregisterOnExecution) {
+            context.unregister(taskId, delegate);
+        }
         try {
             delegate.run();
         } finally {

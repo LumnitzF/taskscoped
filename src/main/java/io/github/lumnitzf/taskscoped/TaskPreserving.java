@@ -25,6 +25,9 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
  * </p>
  *
  * @author Fritz Lumnitz
+ * @implNote The default behavior expects every Runnable or Callable to be executed exactly once. Otherwise the moment
+ * the TaskScope should be destroyed cannot be determined. In case a different behavior is desired, the application is
+ * required to implement its own decorator, which registers and unregisters the tasks correctly.
  */
 @Qualifier
 @Retention(value = RUNTIME)

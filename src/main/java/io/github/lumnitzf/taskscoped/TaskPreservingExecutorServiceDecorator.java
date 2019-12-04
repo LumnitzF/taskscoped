@@ -29,9 +29,9 @@ import java.util.stream.Collectors;
 public class TaskPreservingExecutorServiceDecorator implements ExecutorService {
 
     /**
-     * The {@link BeanManager} required by the applied decorators.
+     * The {@link TaskScopedContext} required by the applied decorators.
      */
-    protected final BeanManager beanManager;
+    protected final TaskScopedContext context;
 
     /**
      * The decorated {@link TaskPreserving} delegate.
@@ -41,7 +41,8 @@ public class TaskPreservingExecutorServiceDecorator implements ExecutorService {
     @Inject
     protected TaskPreservingExecutorServiceDecorator(BeanManager beanManager,
                                                      @Delegate @TaskPreserving ExecutorService delegate) {
-        this.beanManager = Objects.requireNonNull(beanManager, "beanManager");
+        this.context = (TaskScopedContext) Objects.requireNonNull(beanManager, "beanManager")
+                .getContext(TaskScoped.class);
         this.delegate = Objects.requireNonNull(delegate, "delegate");
     }
 
@@ -84,38 +85,102 @@ public class TaskPreservingExecutorServiceDecorator implements ExecutorService {
 
     @Override
     public void execute(Runnable command) {
-        delegate.execute(new TaskPreservingRunnableDecorator(beanManager, command));
+        delegate.execute(decorate(command));
+    }
+
+    /**
+     * Decorates the provided {@link Runnable} to be executed in the same TaskScope as this method invocation.
+     * The {@code runnable} is expected to run exactly once in the TaskScope. If it does not run at all, the TaskScope
+     * will be held active indefinitely. If it does run more than once, the TaskScope may be destroyed and re-created
+     * between the invocations.
+     *
+     * @param runnable Runnable to decorate.
+     * @return decorated Runnable, {@code null} if {@code runnable} was {@code null}
+     * @see #decorate(Runnable, boolean, boolean)
+     */
+    protected Runnable decorate(Runnable runnable) {
+        return decorate(runnable, true, true);
     }
 
     /**
      * Decorates the provided {@link Runnable} to be executed in the same TaskScope as this method invocation.
      *
-     * @param runnable The Runnable to decorate.
-     * @return The decorated Runnable, {@code null} if {@code runnable} was {@code null}
+     * @param runnable              Runnable to decorate.
+     * @param registerOnCreation    indicates if the callable should be {@link TaskScopedContext#register(TaskId,
+     *                              Object) registered} for execution
+     * @param unregisterOnExecution indicates if the callable should be {@link TaskScopedContext#unregister(TaskId,
+     *                              Object) unregistered} before its execution.
+     * @return decorated Runnable, {@code null} if {@code runnable} was {@code null}
      */
-    protected Runnable decorate(Runnable runnable) {
-        return runnable == null ? null : new TaskPreservingRunnableDecorator(beanManager, runnable);
+    protected Runnable decorate(Runnable runnable, boolean registerOnCreation, boolean unregisterOnExecution) {
+        return runnable == null ? null : new TaskPreservingRunnableDecorator(context, runnable, true, true);
+    }
+
+    /**
+     * Decorates the provided {@link Callable} to be executed in the same TaskScope as this method invocation. The
+     * {@code callable} is expected to run exactly once in the TaskScope. If it does not run at all, the TaskScope will
+     * be held active indefinitely. If it does run more than once, the TaskScope may be destroyed and re-created between
+     * the invocations.
+     *
+     * @param callable Callable to decorate
+     * @param <T>      type of the values returned from the tasks
+     * @return decorated Callable, {@code null} if {@code callable} was {@code null}
+     * @see #decorate(Callable, boolean, boolean)
+     */
+    protected <T> Callable<T> decorate(Callable<T> callable) {
+        return decorate(callable, true, true);
     }
 
     /**
      * Decorates the provided {@link Callable} to be executed in the same TaskScope as this method invocation.
      *
-     * @param callable The Callable to decorate.
-     * @return The decorated Callable, {@code null} if {@code callable} was {@code null}
+     * @param callable              Callable to decorate
+     * @param registerOnCreation    indicates if the callable should be {@link TaskScopedContext#register(TaskId,
+     *                              Object) registered} for execution
+     * @param unregisterOnExecution indicates if the callable should be {@link TaskScopedContext#unregister(TaskId,
+     *                              Object) unregistered} before its execution.
+     * @param <T>                   the type of the value returned from the callable
+     * @return decorated Callable, {@code null} if {@code callable} was {@code null}
      */
-    protected <V> Callable<V> decorate(Callable<V> callable) {
-        return callable == null ? null : new TaskPreservingCallableDecorator<>(beanManager, callable);
+    protected <T> Callable<T> decorate(Callable<T> callable, boolean registerOnCreation,
+                                       boolean unregisterOnExecution) {
+        return callable == null ? null : new TaskPreservingCallableDecorator<>(context, callable, registerOnCreation,
+                unregisterOnExecution);
+    }
+
+    /**
+     * Decorates all the provided {@link Callable} to be executed in the same TaskScope as this method invocation.
+     * {@code null} instances in the collection also be present in the resulting collection. All
+     * tasks are expected to run exactly once in the TaskScope. If it does not run at all, the TaskScope
+     * will be held active indefinitely. If it does run more than once, the TaskScope may be destroyed and re-created
+     * between the invocations.
+     *
+     * @param tasks collection of callable to decorate.
+     * @param <T>   type of values returned from the callable
+     * @return collection of decorated tasks, {@code null} if {@code tasks} was {@code null}.
+     * @see #decorate(Collection, boolean, boolean)
+     */
+    protected <T> Collection<? extends Callable<T>> decorate(Collection<? extends Callable<T>> tasks) {
+        return decorate(tasks, true, true);
     }
 
     /**
      * Decorates all the provided {@link Callable} to be executed in the same TaskScope as this method invocation.
      * {@code null} instances in the collection also be present in the resulting collection.
      *
-     * @param tasks The collection of callable to decorate.
-     * @return Collection of decorated tasks, {@code null} if {@code tasks} was {@code null}.
+     * @param tasks                 collection of callable to decorate.
+     * @param registerOnCreation    indicates if the tasks should be {@link TaskScopedContext#register(TaskId,
+     *                              Object) registered} for execution
+     * @param unregisterOnExecution indicates if the tasks should be {@link TaskScopedContext#unregister(TaskId,
+     *                              Object) unregistered} before its execution.
+     * @param <T>                   the type of values returned from the tasks
+     * @return collection of decorated tasks, {@code null} if {@code tasks} was {@code null}.
      */
-    protected <T> Collection<? extends Callable<T>> decorate(Collection<? extends Callable<T>> tasks) {
-        return tasks == null ? null : tasks.stream().map(this::decorate).collect(Collectors.toList());
+    protected <T> Collection<? extends Callable<T>> decorate(Collection<? extends Callable<T>> tasks,
+                                                             boolean registerOnCreation,
+                                                             boolean unregisterOnExecution) {
+        return tasks == null ? null : tasks.stream()
+                .map(task -> decorate(task, registerOnCreation, unregisterOnExecution)).collect(Collectors.toList());
     }
 
     // Only delegated methods without changed behavior

@@ -41,8 +41,8 @@ public class TaskScopedExtension implements Extension {
         }
     }
 
-    void afterBeanDiscovery(@Observes AfterBeanDiscovery abd) {
-        abd.addContext(new TaskScopedContext());
+    void afterBeanDiscovery(@Observes AfterBeanDiscovery abd, BeanManager beanManager) {
+        abd.addContext(new TaskScopedContext(beanManager));
     }
 
     private static class DelegateProducer<X> implements Producer<X> {

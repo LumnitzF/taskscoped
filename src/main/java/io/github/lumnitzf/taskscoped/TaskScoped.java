@@ -24,15 +24,19 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
  * </p>
  *
  * <ul>
- * <li>during {@link TaskScopeEnabled} invocations</li>
- * <li>during invocations of {@link TaskPreserving} beans</li>
- * <li>during invocations of {@link Runnable} or {@link Callable} inside a Thread managed by a TaskPreserving
- * {@link ExecutorService} or {@link ManagedExecutorService}</li>
+ *     <li>during {@link TaskScopeEnabled} invocations</li>
+ *     <li>during invocations of {@link TaskPreserving} beans</li>
+ *     <li>during invocations of {@link Runnable} or {@link Callable} inside a Thread managed by a TaskPreserving
+ *     {@link ExecutorService} or {@link ManagedExecutorService}</li>
  * </ul>
  *
  * <p>
- * The task context is destroyed after each bean exits the {@link TaskScopeEnabled} invocation and all associated
- * {@link TaskPreserving} beans also exit their intercepted invocations.
+ * The task context is destroyed when:
+ * <ul>
+ *     <li>each bean exited the {@link TaskScopeEnabled} invocation; and</li>
+ *     <li>all associated {@link TaskPreserving} beans also exited their intercepted invocations; and</li>
+ *     <li>no bean is registered for invocation anymore</li>
+ * </ul>
  * </p>
  *
  * <p>

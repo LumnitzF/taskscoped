@@ -7,10 +7,14 @@ import javax.enterprise.context.Initialized;
 import javax.enterprise.context.spi.Context;
 import javax.enterprise.context.spi.Contextual;
 import javax.enterprise.context.spi.CreationalContext;
-import javax.enterprise.inject.spi.CDI;
+import javax.enterprise.inject.spi.BeanManager;
 import javax.enterprise.util.AnnotationLiteral;
 import java.lang.annotation.Annotation;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -29,8 +33,25 @@ public class TaskScopedContext implements Context {
     /**
      * Keeps track of the amount of tasks that are currently in the context. The context is destroyed once all tasks are
      * executed.
+     *
+     * @see #isCreated(TaskId)
+     * @see #isDestroyed(TaskId)
      */
     private final Map<TaskId, AtomicInteger> currentRunningCount = new ConcurrentHashMap<>();
+
+    /**
+     * Keeps track of the instances registered for the {@link TaskId}.
+     *
+     * @see #register(TaskId, Object)
+     * @see #unregister(TaskId, Object)
+     */
+    private final Map<TaskId, Set<Object>> registeredInstances = new ConcurrentHashMap<>();
+
+    private final BeanManager beanManager;
+
+    public TaskScopedContext(BeanManager beanManager) {
+        this.beanManager = Objects.requireNonNull(beanManager);
+    }
 
     @Override
     public Class<? extends Annotation> getScope() {
@@ -52,27 +73,68 @@ public class TaskScopedContext implements Context {
         return delegate.isActive();
     }
 
+    /**
+     * Registers the {@code instance} to be executed in the TaskScope identified by {@code taskId} some time in the
+     * future. As long as instances are registered for a {@link TaskId}, the context is not destroyed.
+     *
+     * @param taskId   identifying the TaskScope
+     * @param instance to be registered
+     * @see #unregister(TaskId, Object)
+     */
+    public void register(TaskId taskId, Object instance) {
+        synchronized (taskId.lock) {
+            registeredInstances.computeIfAbsent(taskId, ignored -> new HashSet<>()).add(instance);
+        }
+    }
+
+    /**
+     * Removes the {@code instance} from the {@link #register(TaskId, Object) registered} instances.
+     *
+     * @param taskId   identifying the TaskScope
+     * @param instance to be removed
+     * @see #register(TaskId, Object)
+     */
+    public void unregister(TaskId taskId, Object instance) {
+        boolean destroyed = false;
+        // TODO: refactor this with isDestroyed
+        synchronized (taskId.lock) {
+            final Set<Object> registeredInstancesForTask = registeredInstances.getOrDefault(taskId,
+                    Collections.emptySet());
+            registeredInstancesForTask.remove(instance);
+            if (registeredInstancesForTask.isEmpty()) {
+                AtomicInteger currentRunning = currentRunningCount.get(taskId);
+                if (currentRunning != null && currentRunning.get() == 0) {
+                    currentRunningCount.remove(taskId);
+                    destroyed = true;
+                }
+            }
+        }
+        if (destroyed) {
+            beanManager.fireEvent(taskId, new DestroyedLiteral(TaskScoped.class));
+        }
+    }
 
     /**
      * Enter or create the task scope identified by {@code taskId}.
      *
      * @param taskId identifying the task scope to enter
      * @return id of the previous task scope
+     * @see #exit(TaskId)
      */
     public TaskId enter(TaskId taskId) {
         TaskIdManager.set(taskId);
         TaskId previous = delegate.enter(taskId);
         if (isCreated(taskId)) {
-            CDI.current().getBeanManager().fireEvent(taskId, new InitializedLiteral(TaskScoped.class));
+            beanManager.fireEvent(taskId, new InitializedLiteral(TaskScoped.class));
         }
         return previous;
     }
 
     /**
-     * Increments the currentRunningCount for the provided {@code taskId}, creating the counter if not already present.
+     * Evaluates if the TaskScope for the provided {@code taskId} was just created.
      *
-     * @param taskId TaskId to increment the usage
-     * @return {@code true} if the counter for the {@code taskId} was created.
+     * @param taskId identifying the TaskScope
+     * @return {@code true} if the TaskScope was just created.
      */
     private boolean isCreated(TaskId taskId) {
         // Hack to know that the supplier was called, to fire the initialized event outside of the synchronized block
@@ -96,7 +158,8 @@ public class TaskScopedContext implements Context {
     }
 
     /**
-     * Exit the current task scope and re-enter the {@code previous} task scope.
+     * Exit the current task scope and destroy it if no one is in it and no one is {@link #register(TaskId, Object)
+     * registered} for it. Re-enter the {@code previous} task scope.
      *
      * @param previous identifier of the previous task scope. May be {@code null}
      */
@@ -104,7 +167,7 @@ public class TaskScopedContext implements Context {
         final TaskId taskId = TaskIdManager.get().orElseThrow(Exceptions::taskScopeNotActive);
         delegate.exit(previous);
         if (isDestroyed(taskId)) {
-            CDI.current().getBeanManager().fireEvent(taskId, new DestroyedLiteral(TaskScoped.class));
+            beanManager.fireEvent(taskId, new DestroyedLiteral(TaskScoped.class));
         }
         if (previous != null) {
             TaskIdManager.set(previous);
@@ -114,21 +177,21 @@ public class TaskScopedContext implements Context {
     }
 
     /**
-     * Decrements the currentRunningCount for the provided {@code taskId}, removing the counter if it is the last
-     * invocation.
+     * Destroys the TaskScope for {@code taskId} if no one is using it and no one is {@link #register(TaskId, Object)
+     * registered} for it.
      *
-     * @param taskId TaskId to decrement the usage for
-     * @return {@code true} if the counter for the {@code taskId} was destroyed.
+     * @param taskId identifying the TaskScope
+     * @return {@code true} if the TaskScope was destroyed.
      */
     private boolean isDestroyed(TaskId taskId) {
         boolean destroyed = false;
         synchronized (taskId.lock) {
-            if (currentRunningCount.get(taskId).decrementAndGet() == 0) {
-                // TODO: currently the TaskScope may be destroyed, if a runnable etc. is scheduled but not yet executed and
-                //  the scheduling task scope is left.
-                //  --> Implement some sort of pre-registering on creation of delegates and do not destroy until all
-                //      pre-registered tasks are executed
+            final boolean noneInContext = currentRunningCount.get(taskId).decrementAndGet() == 0;
+            final boolean noneRegistered = registeredInstances.getOrDefault(taskId, Collections.emptySet())
+                    .isEmpty();
+            if (noneInContext && noneRegistered) {
                 currentRunningCount.remove(taskId);
+                registeredInstances.remove(taskId);
                 delegate.destroy(taskId);
                 destroyed = true;
             }
