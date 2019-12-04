@@ -74,6 +74,8 @@
         <microscoped-core.version>0.3</microscoped-core.version>
         <junit-jupiter-api.version>${junit5.version}</junit-jupiter-api.version>
         <junit-jupiter-engine.version>${junit5.version}</junit-jupiter-engine.version>
+        <assertj-core.version>3.13.2</assertj-core.version>
+        <mockito-core.version>3.0.0</mockito-core.version>
         <weld-junit5.version>1.2.2.Final</weld-junit5.version>
     </properties>
 
@@ -299,6 +301,18 @@
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-engine</artifactId>
             <version>${junit-jupiter-engine.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.assertj</groupId>
+            <artifactId>assertj-core</artifactId>
+            <version>${assertj-core.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-core</artifactId>
+            <version>${mockito-core.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>

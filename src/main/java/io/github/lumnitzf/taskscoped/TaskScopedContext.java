@@ -211,10 +211,10 @@ public class TaskScopedContext implements Context {
      * @author Fritz Lumnitz
      */
     // Literal implementation pre CDI 2.0
-    private static class InitializedLiteral extends AnnotationLiteral<Initialized> implements Initialized {
+    static class InitializedLiteral extends AnnotationLiteral<Initialized> implements Initialized {
         private final Class<? extends Annotation> value;
 
-        private InitializedLiteral(Class<? extends Annotation> value) {
+        InitializedLiteral(Class<? extends Annotation> value) {
             this.value = value;
         }
 
@@ -230,11 +230,11 @@ public class TaskScopedContext implements Context {
      * @author Fritz Lumnitz
      */
     // Literal implementation pre CDI 2.0
-    private static class DestroyedLiteral extends AnnotationLiteral<Destroyed> implements Destroyed {
+    static class DestroyedLiteral extends AnnotationLiteral<Destroyed> implements Destroyed {
 
         private final Class<? extends Annotation> value;
 
-        private DestroyedLiteral(Class<? extends Annotation> value) {
+        DestroyedLiteral(Class<? extends Annotation> value) {
             this.value = value;
         }
 
