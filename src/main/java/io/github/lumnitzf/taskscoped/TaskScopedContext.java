@@ -89,6 +89,8 @@ public class TaskScopedContext implements Context {
      * @see #unregister(TaskId, Object)
      */
     public void register(TaskId taskId, Object instance) {
+        Objects.requireNonNull(taskId, "taskId");
+        Objects.requireNonNull(instance, "instance");
         synchronized (taskId.lock) {
             registeredInstances.computeIfAbsent(taskId, ignored -> new HashSet<>()).add(instance);
         }
@@ -102,6 +104,8 @@ public class TaskScopedContext implements Context {
      * @see #register(TaskId, Object)
      */
     public void unregister(TaskId taskId, Object instance) {
+        Objects.requireNonNull(taskId, "taskId");
+        Objects.requireNonNull(instance, "instance");
         destroyIfPossible(taskId, id -> registeredInstances.getOrDefault(id, Collections.emptySet()).remove(instance));
     }
 
@@ -122,6 +126,7 @@ public class TaskScopedContext implements Context {
      * @see #exit(TaskId)
      */
     public TaskId enter(TaskId taskId) {
+        Objects.requireNonNull(taskId, "taskId");
         TaskIdManager.set(taskId);
         TaskId previous = delegate.enter(taskId);
         createIfNecessary(taskId);

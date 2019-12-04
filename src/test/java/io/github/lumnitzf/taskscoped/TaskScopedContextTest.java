@@ -123,6 +123,7 @@ class TaskScopedContextTest {
                 @BeforeEach
                 void register() {
                     assumeThat(testee.isActive()).isFalse();
+                    registered = new Object();
                     testee.register(taskId, registered);
                 }
 
