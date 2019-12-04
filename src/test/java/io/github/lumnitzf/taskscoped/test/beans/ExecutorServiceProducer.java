@@ -13,12 +13,18 @@ public class ExecutorServiceProducer {
 
     @Produces
     @ApplicationScoped
-    @TaskPreserving
-    ExecutorService getExecutorService() {
+    ExecutorService getDefaultService() {
         return Executors.newSingleThreadExecutor();
     }
 
-    void destroyExecutorService(@Disposes @TaskPreserving ExecutorService service) {
+    @Produces
+    @ApplicationScoped
+    @TaskPreserving
+    ExecutorService getExecutorService(ExecutorService defaultService) {
+        return defaultService;
+    }
+
+    void destroyExecutorService(@Disposes ExecutorService service) {
         service.shutdown();
     }
 }

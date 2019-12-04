@@ -13,10 +13,14 @@ import javax.inject.Inject;
 import java.lang.annotation.Annotation;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.concurrent.ExecutorService;
 
 class SimpleTest extends AbstractTaskScopedExtensionTest {
     @Inject
     private RequestScopedRunner runner;
+
+    @Inject
+    private ExecutorService executorService;
 
     @Override
     Collection<Class<?>> getBeanClasses() {
@@ -31,6 +35,9 @@ class SimpleTest extends AbstractTaskScopedExtensionTest {
 
     @Test
     void test() throws Exception {
+        // Trigger executorService creation before entering the TaskScope
+        executorService.toString();
+        executorService.submit(() -> {});
         runner.doRun();
     }
 }

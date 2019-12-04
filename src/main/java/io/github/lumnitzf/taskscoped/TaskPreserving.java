@@ -1,6 +1,7 @@
 package io.github.lumnitzf.taskscoped;
 
 import javax.enterprise.concurrent.ManagedExecutorService;
+import javax.enterprise.context.ContextNotActiveException;
 import javax.enterprise.inject.Produces;
 import javax.enterprise.util.AnnotationLiteral;
 import javax.inject.Qualifier;
@@ -20,8 +21,32 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
  * Task preserving beans execute or are executed in the same TaskScope as the caller, even over multiple threads.
  * <p>
  * A decorator is already provided for {@link ExecutorService} and {@link ManagedExecutorService} container created
- * beans and all instances returned by {@link Produces producers}. To apply the decorator annotate the bean class or the
- * producer.
+ * beans and all instances returned by {@link Produces producers}. To apply the decorator annotate the bean class or
+ * the producer. The so acquired ExecutorService must only be used inside a TaskScope, otherwise a {@link
+ * ContextNotActiveException} will be thrown.
+ * </p>
+ * <p>
+ * A possibility to use the same underlying ExecutorService is to use multiple producers:
+ * <pre>
+ * {@code
+ *     @ApplicationScoped
+ *     public class ExecutorServiceProducer {
+ *
+ *         @Produces
+ *         @ApplicationScoped
+ *         ExecutorService getDefaultService() {
+ *             // return your service
+ *         }
+ *
+ *         @Produces
+ *         @ApplicationScoped
+ *         @TaskPreserving
+ *         ExecutorService getExecutorService(ExecutorService defaultService) {
+ *             return defaultService;
+ *         }
+ *     }
+ * }
+ * </pre>
  * </p>
  *
  * @author Fritz Lumnitz
