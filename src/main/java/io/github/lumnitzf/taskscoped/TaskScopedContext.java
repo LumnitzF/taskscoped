@@ -17,6 +17,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
 
 /**
  * {@link Context} implementation for {@link TaskScoped}.
@@ -32,15 +33,16 @@ public class TaskScopedContext implements Context {
 
     /**
      * Keeps track of the amount of tasks that are currently in the context. The context is destroyed once all tasks are
-     * executed.
+     * executed. Accesses to this map and its value must be synchronized using {@link TaskId#lock}.
      *
-     * @see #isCreated(TaskId)
-     * @see #isDestroyed(TaskId)
+     * @see #createIfNecessary(TaskId)
+     * @see #exit(TaskId)
      */
     private final Map<TaskId, AtomicInteger> currentRunningCount = new ConcurrentHashMap<>();
 
     /**
-     * Keeps track of the instances registered for the {@link TaskId}.
+     * Keeps track of the instances registered for the {@link TaskId}. Accesses to this map and its value must be
+     * synchronized using {@link TaskId#lock}.
      *
      * @see #register(TaskId, Object)
      * @see #unregister(TaskId, Object)
@@ -100,57 +102,7 @@ public class TaskScopedContext implements Context {
      * @see #register(TaskId, Object)
      */
     public void unregister(TaskId taskId, Object instance) {
-        boolean destroyed = false;
-        // TODO: refactor this with isDestroyed
-        synchronized (taskId.lock) {
-            final Set<Object> registeredInstancesForTask = registeredInstances.getOrDefault(taskId,
-                    Collections.emptySet());
-            registeredInstancesForTask.remove(instance);
-            if (registeredInstancesForTask.isEmpty()) {
-                AtomicInteger currentRunning = currentRunningCount.get(taskId);
-                if (currentRunning != null && currentRunning.get() == 0) {
-                    currentRunningCount.remove(taskId);
-                    destroyed = true;
-                }
-            }
-        }
-        if (destroyed) {
-            beanManager.fireEvent(taskId, new DestroyedLiteral(TaskScoped.class));
-        }
-    }
-
-    /**
-     * Enter or create the task scope identified by {@code taskId}.
-     *
-     * @param taskId identifying the task scope to enter
-     * @return id of the previous task scope
-     * @see #exit(TaskId)
-     */
-    public TaskId enter(TaskId taskId) {
-        TaskIdManager.set(taskId);
-        TaskId previous = delegate.enter(taskId);
-        if (isCreated(taskId)) {
-            beanManager.fireEvent(taskId, new InitializedLiteral(TaskScoped.class));
-        }
-        return previous;
-    }
-
-    /**
-     * Evaluates if the TaskScope for the provided {@code taskId} was just created.
-     *
-     * @param taskId identifying the TaskScope
-     * @return {@code true} if the TaskScope was just created.
-     */
-    private boolean isCreated(TaskId taskId) {
-        // Hack to know that the supplier was called, to fire the initialized event outside of the synchronized block
-        final boolean[] created = {false};
-        synchronized (taskId.lock) {
-            currentRunningCount.computeIfAbsent(taskId, ignored -> {
-                created[0] = true;
-                return new AtomicInteger(0);
-            }).incrementAndGet();
-        }
-        return created[0];
+        destroyIfPossible(taskId, id -> registeredInstances.getOrDefault(id, Collections.emptySet()).remove(instance));
     }
 
     /**
@@ -163,6 +115,20 @@ public class TaskScopedContext implements Context {
     }
 
     /**
+     * Enter or create the task scope identified by {@code taskId}.
+     *
+     * @param taskId identifying the task scope to enter
+     * @return id of the previous task scope
+     * @see #exit(TaskId)
+     */
+    public TaskId enter(TaskId taskId) {
+        TaskIdManager.set(taskId);
+        TaskId previous = delegate.enter(taskId);
+        createIfNecessary(taskId);
+        return previous;
+    }
+
+    /**
      * Exit the current task scope and destroy it if no one is in it and no one is {@link #register(TaskId, Object)
      * registered} for it. Re-enter the {@code previous} task scope.
      *
@@ -171,9 +137,7 @@ public class TaskScopedContext implements Context {
     public void exit(TaskId previous) {
         final TaskId taskId = TaskIdManager.get().orElseThrow(Exceptions::taskScopeNotActive);
         delegate.exit(previous);
-        if (isDestroyed(taskId)) {
-            beanManager.fireEvent(taskId, new DestroyedLiteral(TaskScoped.class));
-        }
+        destroyIfPossible(taskId, id -> currentRunningCount.get(id).decrementAndGet());
         if (previous != null) {
             TaskIdManager.set(previous);
         } else {
@@ -181,29 +145,58 @@ public class TaskScopedContext implements Context {
         }
     }
 
-    /**
-     * Destroys the TaskScope for {@code taskId} if no one is using it and no one is {@link #register(TaskId, Object)
-     * registered} for it.
-     *
-     * @param taskId identifying the TaskScope
-     * @return {@code true} if the TaskScope was destroyed.
-     */
-    private boolean isDestroyed(TaskId taskId) {
+    private void createIfNecessary(TaskId taskId) {
+        // Hack to know that the supplier was called, to fire the initialized event outside of the synchronized block
+        final boolean[] created = {false};
+        synchronized (taskId.lock) {
+            currentRunningCount.computeIfAbsent(taskId, ignored -> {
+                created[0] = true;
+                return new AtomicInteger(0);
+            }).incrementAndGet();
+        }
+        if (created[0]) {
+            fireInitialized(taskId);
+        }
+    }
+
+    private void destroyIfPossible(TaskId taskId, Consumer<TaskId> synchronizedCleanup) {
         boolean destroyed = false;
         synchronized (taskId.lock) {
-            final boolean noneInContext = currentRunningCount.get(taskId).decrementAndGet() == 0;
-            final boolean noneRegistered = registeredInstances.getOrDefault(taskId, Collections.emptySet())
-                    .isEmpty();
-            if (noneInContext && noneRegistered) {
-                currentRunningCount.remove(taskId);
-                registeredInstances.remove(taskId);
-                delegate.destroy(taskId);
+            synchronizedCleanup.accept(taskId);
+            if (canDestroy(taskId)) {
+                destroy(taskId);
                 destroyed = true;
             }
         }
-        return destroyed;
+        if (destroyed) {
+            fireDestroyed(taskId);
+        }
     }
 
+    private boolean canDestroy(TaskId taskId) {
+        synchronized (taskId.lock) {
+            final AtomicInteger currentRunning = currentRunningCount.get(taskId);
+            // If currentRunning is null, we do not have a created scope (only registered instances) so we cannot destroy it
+            return currentRunning != null && currentRunning.get() == 0 && registeredInstances.getOrDefault(taskId,
+                    Collections.emptySet()).isEmpty();
+        }
+    }
+
+    private void destroy(TaskId taskId) {
+        synchronized (taskId.lock) {
+            currentRunningCount.remove(taskId);
+            registeredInstances.remove(taskId);
+            delegate.destroy(taskId);
+        }
+    }
+
+    private void fireDestroyed(TaskId taskId) {
+        beanManager.fireEvent(taskId, new DestroyedLiteral(TaskScoped.class));
+    }
+
+    private void fireInitialized(TaskId taskId) {
+        beanManager.fireEvent(taskId, new InitializedLiteral(TaskScoped.class));
+    }
 
     /**
      * Supports inline instantiation of the {@link Initialized} qualifier.
