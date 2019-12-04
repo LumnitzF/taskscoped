@@ -19,7 +19,6 @@ import java.util.concurrent.atomic.AtomicInteger;
  *
  * @author Fritz Lumnitz
  */
-// TODO: verify that the Initialized and Destroyed events are fired
 public class TaskScopedContext implements Context {
 
     /**
@@ -58,7 +57,7 @@ public class TaskScopedContext implements Context {
      * Enter or create the task scope identified by {@code taskId}.
      *
      * @param taskId identifying the task scope to enter
-     * @return The id of the previous task scope
+     * @return id of the previous task scope
      */
     public TaskId enter(TaskId taskId) {
         TaskIdManager.set(taskId);
@@ -79,7 +78,7 @@ public class TaskScopedContext implements Context {
     /**
      * Enter or create the task scope identified by the {@link TaskIdManager#getOrCreate() current} task id.
      *
-     * @return The id of the previous task scope
+     * @return id of the previous task scope
      */
     public TaskId enter() {
         return enter(TaskIdManager.getOrCreate());
@@ -88,7 +87,7 @@ public class TaskScopedContext implements Context {
     /**
      * Exit the current task scope and re-enter the {@code previous} task scope.
      *
-     * @param previous The identifier of the previous task scope. May be {@code null}
+     * @param previous identifier of the previous task scope. May be {@code null}
      */
     public void exit(TaskId previous) {
         final TaskId taskId = TaskIdManager.get().orElseThrow(Exceptions::taskScopeNotActive);

@@ -17,7 +17,7 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 /**
  * Task preserving {@link Qualifier qualifier}.<br>
- * Task preserving beans execute or are executed in the same TaskScope even over multiple threads.
+ * Task preserving beans execute or are executed in the same TaskScope as the caller, even over multiple threads.
  * <p>
  * A decorator is already provided for {@link ExecutorService} and {@link ManagedExecutorService} container created
  * beans and all instances returned by {@link Produces producers}. To apply the decorator annotate the bean class or the

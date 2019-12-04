@@ -20,7 +20,7 @@ import java.util.stream.Collectors;
 /**
  * {@link TaskPreserving} decorator for {@link ExecutorService}. <br>
  * Wraps all provided {@link Runnable} and {@link Callable} to be executed in the same TaskScope as the invoker Thread.
- * Subclasses may use the various {@code decorate(...)} methods to achive the same behavior.
+ * Subclasses may use the various {@code decorate(...)} methods to achieve the same behavior.
  *
  * @author Fritz Lumnitz
  */
