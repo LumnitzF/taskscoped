@@ -29,9 +29,9 @@ import java.util.stream.Collectors;
 public class TaskPreservingExecutorServiceDecorator implements ExecutorService {
 
     /**
-     * The {@link TaskScopedContext} required by the applied decorators.
+     * The {@link BeanManager} to get the {@link TaskScopedContext}.
      */
-    protected final TaskScopedContext context;
+    protected final BeanManager beanManager;
 
     /**
      * The decorated {@link TaskPreserving} delegate.
@@ -41,8 +41,7 @@ public class TaskPreservingExecutorServiceDecorator implements ExecutorService {
     @Inject
     protected TaskPreservingExecutorServiceDecorator(BeanManager beanManager,
                                                      @Delegate @TaskPreserving ExecutorService delegate) {
-        this.context = (TaskScopedContext) Objects.requireNonNull(beanManager, "beanManager")
-                .getContext(TaskScoped.class);
+        this.beanManager = Objects.requireNonNull(beanManager, "beanManager");
         this.delegate = Objects.requireNonNull(delegate, "delegate");
     }
 
@@ -113,7 +112,7 @@ public class TaskPreservingExecutorServiceDecorator implements ExecutorService {
      * @return decorated Runnable, {@code null} if {@code runnable} was {@code null}
      */
     protected Runnable decorate(Runnable runnable, boolean registerOnCreation, boolean unregisterOnExecution) {
-        return runnable == null ? null : new TaskPreservingRunnableDecorator(context, runnable, true, true);
+        return runnable == null ? null : new TaskPreservingRunnableDecorator(getContext(), runnable, true, true);
     }
 
     /**
@@ -144,7 +143,8 @@ public class TaskPreservingExecutorServiceDecorator implements ExecutorService {
      */
     protected <T> Callable<T> decorate(Callable<T> callable, boolean registerOnCreation,
                                        boolean unregisterOnExecution) {
-        return callable == null ? null : new TaskPreservingCallableDecorator<>(context, callable, registerOnCreation,
+        return callable == null ? null : new TaskPreservingCallableDecorator<>(getContext(), callable,
+                registerOnCreation,
                 unregisterOnExecution);
     }
 
@@ -181,6 +181,10 @@ public class TaskPreservingExecutorServiceDecorator implements ExecutorService {
                                                              boolean unregisterOnExecution) {
         return tasks == null ? null : tasks.stream()
                 .map(task -> decorate(task, registerOnCreation, unregisterOnExecution)).collect(Collectors.toList());
+    }
+
+    private TaskScopedContext getContext() {
+        return (TaskScopedContext) beanManager.getContext(TaskScoped.class);
     }
 
     // Only delegated methods without changed behavior
