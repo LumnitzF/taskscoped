@@ -92,7 +92,7 @@ class TaskPreservingExecutorServiceTest extends AbstractTaskScopedExtensionTest 
     void taskIsKeptAliveBetweenNonOverlappingCallsWhenInitialExits(TaskIdSettingCallable callable) throws Exception {
         // Arrange
         final Semaphore sema = new Semaphore(0);
-        final Future<TaskId>[] futures = new Future[2];
+        final Future[] futures = new Future[2];
         final AtomicReference<TaskId> initial = new AtomicReference<>(null);
 
         // Act
@@ -114,8 +114,8 @@ class TaskPreservingExecutorServiceTest extends AbstractTaskScopedExtensionTest 
                 ContextNotActiveException.class);
         // The first one will halt until this point
         sema.release();
-        final TaskId first = futures[0].get();
-        final TaskId second = futures[1].get();
+        final TaskId first = (TaskId) futures[0].get();
+        final TaskId second = (TaskId) futures[1].get();
 
         // Assert
         // All three must have the same task id
