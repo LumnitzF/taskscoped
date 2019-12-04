@@ -47,6 +47,9 @@ public class TaskScopedContext implements Context {
      */
     private final Map<TaskId, Set<Object>> registeredInstances = new ConcurrentHashMap<>();
 
+    /**
+     * {@link BeanManager} used to fire events
+     */
     private final BeanManager beanManager;
 
     public TaskScopedContext(BeanManager beanManager) {
