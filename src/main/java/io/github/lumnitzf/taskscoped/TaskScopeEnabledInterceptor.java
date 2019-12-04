@@ -22,6 +22,7 @@ class TaskScopeEnabledInterceptor {
 
     @AroundInvoke
     public Object invoke(InvocationContext invocation) throws Exception {
+        TaskScopedContext.activate();
         final TaskScopedContext context = (TaskScopedContext) beanManager.getContext(TaskScoped.class);
         final TaskId previous = context.enter();
         try {

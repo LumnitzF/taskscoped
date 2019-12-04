@@ -58,6 +58,14 @@ public class TaskScopedContext implements Context {
         this.beanManager = Objects.requireNonNull(beanManager);
     }
 
+    /**
+     * Activate the TaskScopedContext for this thread.
+     */
+    // Must be in sync with isActive()
+    public static void activate() {
+        TaskIdManager.getOrCreate();
+    }
+
     @Override
     public Class<? extends Annotation> getScope() {
         return delegate.getScope();
@@ -74,6 +82,7 @@ public class TaskScopedContext implements Context {
     }
 
     @Override
+    // Must be in sync with activate()
     public boolean isActive() {
         // Bug in microscoped-core, that scope is always active
         // return delegate.isActive();
