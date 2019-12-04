@@ -1,4 +1,4 @@
-package io.github.lumnitzf.taskscoped.test.beans;
+package io.github.lumnitzf.taskscoped.beans;
 
 import io.github.lumnitzf.taskscoped.TaskPreserving;
 
