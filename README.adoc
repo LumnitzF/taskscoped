@@ -1,5 +1,5 @@
 = Taskscoped 
-[![Actions Status](https://github.com/lumnitzf/taskscoped/workflows/maven/badge.svg)](https://github.com/lumnitzf/taskscoped/actions)
+[![Actions Status](https://github.com/lumnitzf/taskscoped/workflows/Build%20Status/badge.svg)](https://github.com/lumnitzf/taskscoped/actions)
 
 A custom CDI Scope for managing beans across multiple threads by binding them to one task.
 
