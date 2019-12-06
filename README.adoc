@@ -1,0 +1,193 @@
+= Taskscoped
+
+A custom CDI Scope for managing beans across multiple threads by binding them to one task.
+
+This project attempts to provide a custom `@TaskScoped` which will be preserved over multiple Threads, allowing `Runnable` and `Callable` instances to access the same beans as the scheduling thread.
+
+== Dependency
+
+The dependency is available on maven central.
+To include it in your project simply add it to your dependencies:
+
+[source,xml]
+----
+<dependency>
+    <groupId>io.github.lumnitzf</groupId>
+    <artifactId>taskscoped</artifactId>
+    <version>${taskscoped.version}</version>
+</dependency>
+----
+
+== How it works
+
+To enable the task scope inside a method call, simply annotate the method or bean with `@TaskScopeEnabled`.
+Once the task scope is enabled, any `Runnable` or `Callable` scheduled by a `@TaskPreserving` (`Managed`)`ExecutorService` will also run inside the same task scope.
+
+The task scope stays active until:
+
+* The initial `TaskScopeEnabled` call ends, and
+* Every `Runnable` or `Callable` scheduled for the same task scope has run
+
+For example consider this task scoped data holder:
+
+[source,java]
+----
+import io.github.lumnitzf.taskscoped.TaskScoped;
+
+@TaskScoped
+public synchronized class DataHolder {
+    private String value;
+
+    public void setValue(String value) {
+        this.value = value;
+    }
+
+    public String getValue() {
+        return value;
+    }
+}
+----
+
+This task scope enabling bean:
+
+[source,java]
+----
+import io.github.lumnitzf.taskscoped.TaskPreserving;
+import io.github.lumnitzf.taskscoped.TaskScopeEnabled;
+import javax.inject.Inject;
+import java.util.concurrent.ExecutorService;
+
+@TaskScopeEnabled
+public class TaskScopeEnablingRunner {
+
+    @Inject
+    @TaskPreserving
+    private ExecutorService taskPreservingService;
+
+    @Inject
+    private MyRunner runner;
+
+    @Inject
+    private DataHolder dataHolder;
+
+    public void doIt() {
+        dataHolder.setValue("Hello World!");
+        taskPreservingService.submit(runner);
+        // Even when this call ends before the runner is executed,
+        // the task scope is kept alive until runner finishes
+    }
+
+}
+----
+
+And this runner:
+
+[source,java]
+----
+import javax.enterprise.context.Dependent;
+import javax.inject.Inject;
+
+@Dependent // Must be either dependent or ApplicationScoped
+public class MyRunner implements Runnable {
+
+    @Inject
+    private DataHolder dataHolder;
+
+    public void run() {
+        // Prints "Hello World!"
+        System.out.println(dataHolder.getValue());
+    }
+}
+----
+
+In order to access a `@TaskPreserving` `ExecutorService` either the bean or the *producer* can be annotated with `@TaskPreserving`.
+
+These two implementations both provide a task preserving `ExecutorService`:
+
+[source,java]
+----
+import io.github.lumnitzf.taskscoped.TaskPreserving;
+import javax.enterprise.context.ApplicationScoped;
+import javax.enterprise.context.Dependent;
+import java.util.concurrent.ExecutorService;
+
+@ApplicationScoped
+@TaskPreserving
+public class ExecutorServiceImpl implements ExecutorService {
+
+    // Implementation
+}
+----
+
+[source,java]
+----
+import io.github.lumnitzf.taskscoped.TaskPreserving;
+import javax.enterprise.context.ApplicationScoped;
+import javax.enterprise.context.Dependent;
+import javax.enterprise.inject.Produces;
+import java.util.concurrent.ExecutorService;
+
+@ApplicationScoped
+public class ExecutorServiceProducer {
+
+    @Produces
+    @TaskPreserving
+    public ExecutorService create() {
+        // Usually you inject the ManagedExecutorService from the container using
+        // @javax.annotation.Resource and simply return it here
+    }
+}
+----
+
+Due to type restrictions, the approach utilizing a producer method only works if the return type is *exactly* `ExecutorService` or `ManagedExecutorService`
+
+== TaskId
+
+Each enabled task scope is defined by a unique `TaskId`.
+Executing threads may utilize the TaskId for correct synchronization.
+
+The TaskId may be acquired by direct injection:
+
+[source,java]
+----
+import io.github.lumnitzf.taskscoped.TaskScopeEnabled;
+import javax.inject.Inject;
+
+@TaskScopeEnabled
+public class MyBean {
+
+    @Inject
+    private TaskId currentTaskId;
+}
+----
+
+This instance however is (at least for Weld) wrapped in a proxy instance.
+The `TaskIdManager` can be used to acquire the actual proxy free instance:
+
+[source,java]
+----
+import io.github.lumnitzf.taskscoped.TaskId;import io.github.lumnitzf.taskscoped.TaskIdManager;
+import io.github.lumnitzf.taskscoped.TaskScopeEnabled;
+import javax.inject.Inject;
+
+@TaskScopeEnabled
+public class MyBean {
+
+    @Inject
+    private TaskIdManager taskIdManager;
+
+    public void doIt() {
+        // Retrieves the proxy free instance
+        final TaskId taskId = taskIdManager.getId();
+        synchronized (taskId) {
+            // ...
+        }
+    }
+}
+----
+
+== Known limitations
+
+* Currently each scheduled `Runnable` or `Callable` must be called exactly once for the task scope to correctly be destroyed.
+** If it is never called, the task scope will never be destroyed creating a memory leak.
+** If it is called multiple times, the task scope may be destroyed between the calls and re-created each time.
