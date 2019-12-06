@@ -1,5 +1,6 @@
-= Taskscoped 
-[![Actions Status](https://github.com/lumnitzf/taskscoped/workflows/Build%20Status/badge.svg)](https://github.com/lumnitzf/taskscoped/actions)
+= Taskscoped
+
+image::https://github.com/lumnitzf/taskscoped/workflows/Build%20Status/badge.svg["Build Status"]
 
 A custom CDI Scope for managing beans across multiple threads by binding them to one task.
 
