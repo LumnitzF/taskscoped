@@ -1,6 +1,6 @@
 = Taskscoped
 
-image::https://github.com/lumnitzf/taskscoped/workflows/Build%20Status/badge.svg["Build Status"]
+image:https://travis-ci.com/LumnitzF/taskscoped.svg?branch=master["Build Status", link="https://travis-ci.com/LumnitzF/taskscoped"]
 
 A custom CDI Scope for managing beans across multiple threads by binding them to one task.
 
