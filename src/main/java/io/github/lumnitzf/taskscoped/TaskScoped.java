@@ -10,9 +10,7 @@ import java.lang.annotation.Target;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 
-import static java.lang.annotation.ElementType.FIELD;
-import static java.lang.annotation.ElementType.METHOD;
-import static java.lang.annotation.ElementType.TYPE;
+import static java.lang.annotation.ElementType.*;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 /**
@@ -21,7 +19,6 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
  * </p>
  * <p>
  * The task scope is active:
- * </p>
  *
  * <ul>
  *     <li>during {@link TaskScopeEnabled} invocations</li>
@@ -37,13 +34,11 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
  *     <li>all associated {@link TaskPreserving} beans also exited their intercepted invocations; and</li>
  *     <li>no bean is registered for invocation anymore</li>
  * </ul>
- * </p>
  *
  * <p>
  * An event with qualifier <tt>@Initialized(TaskScoped.class)</tt> is fired when the task context is initialized and an
  * event with qualifier <tt>@Destroyed(TaskScoped.class)</tt> when the task context is destroyed. The event payload is
  * the respective {@link TaskId}.
- * </p>
  *
  * @author Fritz Lumnitz
  */

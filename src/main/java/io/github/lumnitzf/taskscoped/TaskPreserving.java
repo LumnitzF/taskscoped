@@ -10,10 +10,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 import java.util.concurrent.ExecutorService;
 
-import static java.lang.annotation.ElementType.FIELD;
-import static java.lang.annotation.ElementType.METHOD;
-import static java.lang.annotation.ElementType.PARAMETER;
-import static java.lang.annotation.ElementType.TYPE;
+import static java.lang.annotation.ElementType.*;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 /**
@@ -27,27 +24,27 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
  * </p>
  * <p>
  * A possibility to use the same underlying ExecutorService is to use multiple producers:
+ * </p>
  * <pre>
- * {@code
- *     @ApplicationScoped
+ * <code>
+ *     {@literal @}ApplicationScoped
  *     public class ExecutorServiceProducer {
  *
- *         @Produces
- *         @ApplicationScoped
+ *         {@literal @}Produces
+ *         {@literal @}ApplicationScoped
  *         ExecutorService getDefaultService() {
  *             // return your service
  *         }
  *
- *         @Produces
- *         @ApplicationScoped
- *         @TaskPreserving
+ *         {@literal @}Produces
+ *         {@literal @}ApplicationScoped
+ *         {@literal @}TaskPreserving
  *         ExecutorService getExecutorService(ExecutorService defaultService) {
  *             return defaultService;
  *         }
  *     }
- * }
+ * </code>
  * </pre>
- * </p>
  *
  * @author Fritz Lumnitz
  * @implNote The default behavior expects every Runnable or Callable to be executed exactly once. Otherwise the moment
