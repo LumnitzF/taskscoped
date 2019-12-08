@@ -1,6 +1,7 @@
 = Taskscoped
 
 image:https://travis-ci.com/LumnitzF/taskscoped.svg?branch=master["Build Status", link="https://travis-ci.com/LumnitzF/taskscoped"]
+image:https://coveralls.io/repos/github/LumnitzF/taskscoped/badge.svg?branch=master["Coverage", link="https://coveralls.io/github/LumnitzF/taskscoped?branch=master"]
 
 A custom CDI Scope for managing beans across multiple threads by binding them to one task.
 
