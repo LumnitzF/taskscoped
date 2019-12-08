@@ -258,6 +258,8 @@
                         <goals>deploy</goals>
                     </configuration>
                 </plugin>
+                <!-- Jacoco plugin for coverage -->
+                <!-- Will be called by travis after a successful build -->
                 <plugin>
                     <groupId>org.jacoco</groupId>
                     <artifactId>jacoco-maven-plugin</artifactId>
@@ -271,11 +273,14 @@
                         </execution>
                     </executions>
                 </plugin>
+                <!-- Plugin to deploy the coverage report by jacoco to coveralls.io -->
+                <!-- Will be called by travis after a successful build -->
                 <plugin>
                     <groupId>org.eluder.coveralls</groupId>
                     <artifactId>coveralls-maven-plugin</artifactId>
                     <version>${coveralls-maven-plugin.version}</version>
                     <configuration>
+                        <!-- Is set by travis -->
                         <repoToken>${env.COVERALLS_REPO_TOKEN}</repoToken>
                     </configuration>
                 </plugin>

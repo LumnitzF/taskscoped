@@ -3,4 +3,5 @@ jdk:
   - openjdk8
 
 after_success:
+  # Run test coverage report and deploy it to coveralls.io
   - mvn clean test jacoco:report coveralls:report
