@@ -10,7 +10,7 @@ after_success:
 
 deploy:
   provider: script
-  script: mvn deploy --settings .travis/settings.xml
+  script: mvn deploy --settings .travis/settings.xml -P travis
   on:
     branch: master
     # tags are currently build manually, which already include the deployment
