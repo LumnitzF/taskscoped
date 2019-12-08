@@ -255,6 +255,8 @@
                         <autoVersionSubmodules>true</autoVersionSubmodules>
                         <useReleaseProfile>false</useReleaseProfile>
                         <releaseProfiles>release</releaseProfiles>
+                        <!-- plugin requires the @{...} syntax -->
+                        <tagNameFormat>@{project.version}</tagNameFormat>
                         <goals>deploy</goals>
                     </configuration>
                 </plugin>
