@@ -14,7 +14,7 @@
     <artifactId>taskscoped</artifactId>
     <version>0.2.0-SNAPSHOT</version>
 
-    <name>${project.groupId}:${project.artifactId}</name>
+    <name>io.github.lumnitzf:taskscoped</name>
     <description>Provides a CDI extension to define task scoped beans</description>
     <url>https://github.com/lumnitzf/taskscoped</url>
 
