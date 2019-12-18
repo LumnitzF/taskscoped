@@ -1,5 +1,8 @@
 package io.github.lumnitzf.taskscoped;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import javax.enterprise.concurrent.ManagedExecutorService;
 import javax.enterprise.context.spi.CreationalContext;
 import javax.enterprise.event.Observes;
@@ -22,13 +25,18 @@ import java.util.function.Function;
  */
 public class TaskScopedExtension implements Extension {
 
+    private static Logger LOG = LoggerFactory.getLogger(TaskScopedExtension.class);
+
     void beforeBeanDiscovery(@Observes BeforeBeanDiscovery bbd) {
+        LOG.info("Registering task scope");
         bbd.addScope(TaskScoped.class, true, false);
     }
 
     void processExecutorServiceProducer(@Observes ProcessProducer<?, ExecutorService> pp, BeanManager beanManager) {
         if (pp.getAnnotatedMember().isAnnotationPresent(TaskPreserving.class)) {
-            pp.setProducer(new DelegateProducer<>(pp.getProducer(),
+            final Producer<ExecutorService> producer = pp.getProducer();
+            LOG.info("Adding task preserving capability to {}", producer);
+            pp.setProducer(new DelegateProducer<>(producer,
                     delegate -> new TaskPreservingExecutorServiceDecorator(beanManager, delegate)));
         }
     }
@@ -36,12 +44,15 @@ public class TaskScopedExtension implements Extension {
     void processManagedExecutorServiceProducer(@Observes ProcessProducer<?, ManagedExecutorService> pp,
                                                BeanManager beanManager) {
         if (pp.getAnnotatedMember().isAnnotationPresent(TaskPreserving.class)) {
-            pp.setProducer(new DelegateProducer<>(pp.getProducer(),
+            final Producer<ManagedExecutorService> producer = pp.getProducer();
+            LOG.info("Adding task preserving capability to {}", producer);
+            pp.setProducer(new DelegateProducer<>(producer,
                     delegate -> new TaskPreservingManagedExecutorServiceDecorator(beanManager, delegate)));
         }
     }
 
     void afterBeanDiscovery(@Observes AfterBeanDiscovery abd, BeanManager beanManager) {
+        LOG.info("Adding TaskScopedContext");
         abd.addContext(new TaskScopedContext(beanManager));
     }
 

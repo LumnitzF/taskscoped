@@ -1,5 +1,7 @@
 package io.github.lumnitzf.taskscoped;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.tomitribe.microscoped.core.ScopeContext;
 
 import javax.enterprise.context.Destroyed;
@@ -25,6 +27,8 @@ import java.util.function.Consumer;
  * @author Fritz Lumnitz
  */
 public class TaskScopedContext implements Context {
+
+    private static final Logger LOG = LoggerFactory.getLogger(TaskScopedContext.class);
 
     /**
      * Delegate handling the implementation of bean creation etc.
@@ -63,6 +67,7 @@ public class TaskScopedContext implements Context {
      */
     // Must be in sync with isActive()
     public static void activate() {
+        LOG.debug("Activating TaskScopedContext");
         TaskIdManager.getOrCreate();
     }
 
@@ -100,6 +105,7 @@ public class TaskScopedContext implements Context {
     public void register(TaskId taskId, Object instance) {
         Objects.requireNonNull(taskId, "taskId");
         Objects.requireNonNull(instance, "instance");
+        LOG.debug("Registering {} for task {}", instance, taskId);
         synchronized (taskId.lock) {
             registeredInstances.computeIfAbsent(taskId, ignored -> new HashSet<>()).add(instance);
         }
@@ -115,6 +121,7 @@ public class TaskScopedContext implements Context {
     public void unregister(TaskId taskId, Object instance) {
         Objects.requireNonNull(taskId, "taskId");
         Objects.requireNonNull(instance, "instance");
+        LOG.debug("Unregistering {} from task {}", instance, taskId);
         destroyIfPossible(taskId, id -> registeredInstances.getOrDefault(id, Collections.emptySet()).remove(instance));
     }
 
@@ -139,6 +146,7 @@ public class TaskScopedContext implements Context {
         TaskIdManager.set(taskId);
         TaskId previous = delegate.enter(taskId);
         createIfNecessary(taskId);
+        LOG.trace("Entered task {}, previous = {}", taskId, previous);
         if (previous != taskId)
             fireEnter(taskId);
         return previous;
@@ -157,6 +165,7 @@ public class TaskScopedContext implements Context {
             fireExit(taskId);
         }
         delegate.exit(previous);
+        LOG.trace("Exited task {}, previous = {}", taskId, previous);
         destroyIfPossible(taskId, id -> currentRunningCount.get(id).decrementAndGet());
         if (previous != null) {
             TaskIdManager.set(previous);
@@ -175,6 +184,7 @@ public class TaskScopedContext implements Context {
             }).incrementAndGet();
         }
         if (created[0]) {
+            LOG.debug("Created task {}", taskId);
             fireInitialized(taskId);
         }
     }
@@ -189,6 +199,7 @@ public class TaskScopedContext implements Context {
             }
         }
         if (destroyed) {
+            LOG.debug("Destroyed task {}", taskId);
             fireDestroyed(taskId);
         }
     }
