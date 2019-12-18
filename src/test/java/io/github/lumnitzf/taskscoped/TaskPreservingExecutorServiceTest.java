@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test;
 
 import javax.enterprise.context.ContextNotActiveException;
 import javax.enterprise.context.Dependent;
+import javax.enterprise.event.Observes;
 import javax.inject.Inject;
 import java.util.Arrays;
 import java.util.Collection;
@@ -14,6 +15,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.assertj.core.api.Assertions.*;
@@ -152,6 +154,23 @@ class TaskPreservingExecutorServiceTest extends AbstractTaskScopedExtensionTest 
         @Override
         public TaskId call() {
             return manager.getId();
+        }
+    }
+
+    @TaskScoped
+    static class TaskListener {
+
+        private final AtomicInteger inside = new AtomicInteger(0);
+
+        void onEnter(@Observes @AfterTaskEnter TaskId taskId) {
+            inside.incrementAndGet();
+            // System.out.println("["+System.currentTimeMillis()+"] ["+Thread.currentThread().getId()+"] Entered " + taskId);
+        }
+
+        void onExit(@Observes @BeforeTaskExit TaskId taskId) {
+            if (inside.decrementAndGet() < 0)
+                fail("Exit when not entered: " + taskId);
+            // System.out.println("["+System.currentTimeMillis()+"] ["+Thread.currentThread().getId()+"] Exited " + taskId);
         }
     }
 }

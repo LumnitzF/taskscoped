@@ -36,9 +36,14 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
  * </ul>
  *
  * <p>
- * An event with qualifier <tt>@Initialized(TaskScoped.class)</tt> is fired when the task context is initialized and an
- * event with qualifier <tt>@Destroyed(TaskScoped.class)</tt> when the task context is destroyed. The event payload is
+ * An event with qualifier {@code @Initialized(TaskScoped.class)} is fired when the task context is initialized and an
+ * event with qualifier {@code @Destroyed(TaskScoped.class)} when the task context is destroyed. The event payload is
  * the respective {@link TaskId}.
+ * </p>
+ * <p>
+ * An event with qualifier {@code @AfterTaskEnter} is fired after the task context is entered and an event with qualifier
+ * {@code @BeforeTaskExit} before the task context is exited. The event payload is the respective {@link TaskId}.
+ * </p>
  *
  * @author Fritz Lumnitz
  */

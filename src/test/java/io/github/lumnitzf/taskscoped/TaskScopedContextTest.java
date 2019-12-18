@@ -4,13 +4,19 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.mockito.InOrder;
 
 import javax.enterprise.inject.spi.BeanManager;
 import java.util.Objects;
 
-import static org.assertj.core.api.Assertions.*;
-import static org.assertj.core.api.Assumptions.*;
-import static org.mockito.Mockito.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assumptions.assumeThat;
+import static org.mockito.Mockito.eq;
+import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.same;
+import static org.mockito.Mockito.verifyZeroInteractions;
 
 class TaskScopedContextTest {
 
@@ -39,6 +45,18 @@ class TaskScopedContextTest {
         Objects.requireNonNull(taskId);
         inOrder(beanManagerMock).verify(beanManagerMock).fireEvent(same(taskId),
                 eq(new TaskScopedContext.InitializedLiteral(TaskScoped.class)));
+    }
+
+    private void assertAfterTaskEnterEventFired(TaskId taskId) {
+        Objects.requireNonNull(taskId);
+        inOrder(beanManagerMock).verify(beanManagerMock).fireEvent(same(taskId),
+                eq(AfterTaskEnter.Literal.INSTANCE));
+    }
+
+    private void assertBeforeTaskExitEventFired(TaskId taskId) {
+        Objects.requireNonNull(taskId);
+        inOrder(beanManagerMock).verify(beanManagerMock).fireEvent(same(taskId),
+                eq(BeforeTaskExit.Literal.INSTANCE));
     }
 
     private void assertScopeNotActive() {
@@ -95,6 +113,19 @@ class TaskScopedContextTest {
                     assertInitializedEventFired(taskId);
                 }
 
+                @Test
+                void afterTaskEnterEventFired() {
+                    assertAfterTaskEnterEventFired(taskId);
+                }
+
+                @Test
+                void initializedEventFiredBeforeAfterTaskEnterEvent() {
+                    InOrder order = inOrder(beanManagerMock);
+                    order.verify(beanManagerMock).fireEvent(same(taskId),
+                            eq(new TaskScopedContext.InitializedLiteral(TaskScoped.class)));
+                    order.verify(beanManagerMock).fireEvent(same(taskId),
+                            eq(AfterTaskEnter.Literal.INSTANCE));
+                }
                 @Nested
                 class AfterExit {
 
@@ -112,6 +143,20 @@ class TaskScopedContextTest {
                     @Test
                     void destroyedEventFired() {
                         assertDestroyedEventFired(taskId);
+                    }
+
+                    @Test
+                    void beforeTaskExitEventFired() {
+                        assertBeforeTaskExitEventFired(taskId);
+                    }
+
+                    @Test
+                    void beforeExitEventFiredBeforeDestroyedEvent() {
+                        InOrder order = inOrder(beanManagerMock);
+                        order.verify(beanManagerMock).fireEvent(same(taskId),
+                                eq(BeforeTaskExit.Literal.INSTANCE));
+                        order.verify(beanManagerMock).fireEvent(same(taskId),
+                                eq(new TaskScopedContext.DestroyedLiteral(TaskScoped.class)));
                     }
                 }
             }

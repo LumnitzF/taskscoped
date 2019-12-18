@@ -139,6 +139,8 @@ public class TaskScopedContext implements Context {
         TaskIdManager.set(taskId);
         TaskId previous = delegate.enter(taskId);
         createIfNecessary(taskId);
+        if (previous != taskId)
+            fireEnter(taskId);
         return previous;
     }
 
@@ -150,6 +152,10 @@ public class TaskScopedContext implements Context {
      */
     public void exit(TaskId previous) {
         final TaskId taskId = TaskIdManager.get().orElseThrow(Exceptions::taskScopeNotActive);
+        // Fire exit event before exiting the context
+        if (previous != taskId) {
+            fireExit(taskId);
+        }
         delegate.exit(previous);
         destroyIfPossible(taskId, id -> currentRunningCount.get(id).decrementAndGet());
         if (previous != null) {
@@ -210,6 +216,14 @@ public class TaskScopedContext implements Context {
 
     private void fireInitialized(TaskId taskId) {
         beanManager.fireEvent(taskId, new InitializedLiteral(TaskScoped.class));
+    }
+
+    private void fireEnter(TaskId taskId) {
+        beanManager.fireEvent(taskId, AfterTaskEnter.Literal.INSTANCE);
+    }
+
+    private void fireExit(TaskId taskId) {
+        beanManager.fireEvent(taskId, BeforeTaskExit.Literal.INSTANCE);
     }
 
     /**
