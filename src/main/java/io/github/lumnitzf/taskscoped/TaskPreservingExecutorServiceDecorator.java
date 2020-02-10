@@ -112,7 +112,7 @@ public class TaskPreservingExecutorServiceDecorator implements ExecutorService {
      * @return decorated Runnable, {@code null} if {@code runnable} was {@code null}
      */
     protected Runnable decorate(Runnable runnable, boolean registerOnCreation, boolean unregisterOnExecution) {
-        return runnable == null ? null : new TaskPreservingRunnableDecorator(getContext(), runnable, true, true);
+        return runnable == null ? null : new TaskPreservingRunnableDecorator(getContext(), runnable, registerOnCreation, unregisterOnExecution);
     }
 
     /**
