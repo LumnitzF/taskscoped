@@ -32,8 +32,8 @@ class TaskPreservingRunnableDecorator implements Runnable {
      */
     private final boolean unregisterOnExecution;
 
-    TaskPreservingRunnableDecorator(TaskScopedContext context, Runnable delegate, boolean registerOnCreation,
-                                    boolean unregisterOnExecution) {
+    TaskPreservingRunnableDecorator(final TaskScopedContext context, final Runnable delegate, final boolean registerOnCreation,
+                                    final boolean unregisterOnExecution) {
         Objects.requireNonNull(context, "context");
         Objects.requireNonNull(delegate, "delegate");
         this.taskId = TaskIdManager.get().orElseThrow(Exceptions::taskScopeNotActive);

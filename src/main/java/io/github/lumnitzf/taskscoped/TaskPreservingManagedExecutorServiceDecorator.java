@@ -14,7 +14,7 @@ import java.util.concurrent.ExecutorService;
  * </p>
  */
 public class TaskPreservingManagedExecutorServiceDecorator extends TaskPreservingExecutorServiceDecorator implements ManagedExecutorService {
-    protected TaskPreservingManagedExecutorServiceDecorator(BeanManager beanManager, ExecutorService delegate) {
+    protected TaskPreservingManagedExecutorServiceDecorator(final BeanManager beanManager, final ExecutorService delegate) {
         super(beanManager, delegate);
     }
 }

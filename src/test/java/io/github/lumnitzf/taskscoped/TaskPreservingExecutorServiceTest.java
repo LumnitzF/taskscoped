@@ -3,7 +3,7 @@ package io.github.lumnitzf.taskscoped;
 import io.github.lumnitzf.taskscoped.beans.ExecutorServiceProducer;
 import io.github.lumnitzf.taskscoped.beans.TaskIdStore;
 import io.github.lumnitzf.taskscoped.beans.TaskScopeEnabledBean;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 
 import javax.enterprise.context.ContextNotActiveException;
 import javax.enterprise.context.Dependent;
@@ -20,7 +20,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.assertj.core.api.Assumptions.*;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.mock;
 
 class TaskPreservingExecutorServiceTest extends AbstractTaskScopedExtensionTest {
 
@@ -33,7 +33,7 @@ class TaskPreservingExecutorServiceTest extends AbstractTaskScopedExtensionTest 
 
 
     @Test
-    void sameTaskIdWithRunnable(TaskIdStore taskIdStore, TaskIdSettingRunnable runnable) throws Exception {
+    void sameTaskIdWithRunnable(final TaskIdStore taskIdStore, final TaskIdSettingRunnable runnable) throws Exception {
         taskScopeEnabledBean.doInTaskScope(bean -> {
             taskPreservingService.submit(runnable).get();
             assertThat(taskIdStore.getTaskId()).isEqualTo(bean.taskIdManager.getId());
@@ -41,9 +41,9 @@ class TaskPreservingExecutorServiceTest extends AbstractTaskScopedExtensionTest 
     }
 
     @Test
-    void sameTaskIdWithCallable(TaskIdSettingCallable callable) throws Exception {
+    void sameTaskIdWithCallable(final TaskIdSettingCallable callable) throws Exception {
         taskScopeEnabledBean.doInTaskScope(bean -> {
-            TaskId returnedTaskId = taskPreservingService.submit(callable).get();
+            final TaskId returnedTaskId = taskPreservingService.submit(callable).get();
             assertThat(returnedTaskId).isEqualTo(bean.taskIdManager.getId());
         });
     }
@@ -55,10 +55,10 @@ class TaskPreservingExecutorServiceTest extends AbstractTaskScopedExtensionTest 
     }
 
     @Test
-    void taskIsKeptAliveBetweenNonOverlappingCalls(TaskIdSettingCallable callable) throws Exception {
+    void taskIsKeptAliveBetweenNonOverlappingCalls(final TaskIdSettingCallable callable) throws Exception {
         taskScopeEnabledBean.doInTaskScope(bean -> {
-            TaskId firstTaskId = taskPreservingService.submit(callable).get();
-            TaskId secondTaskId = taskPreservingService.submit(callable).get();
+            final TaskId firstTaskId = taskPreservingService.submit(callable).get();
+            final TaskId secondTaskId = taskPreservingService.submit(callable).get();
             assertThat(firstTaskId).isEqualTo(secondTaskId);
         });
     }
@@ -91,7 +91,7 @@ class TaskPreservingExecutorServiceTest extends AbstractTaskScopedExtensionTest 
      *
      */
     @Test
-    void taskIsKeptAliveBetweenNonOverlappingCallsWhenInitialExits(TaskIdSettingCallable callable) throws Exception {
+    void taskIsKeptAliveBetweenNonOverlappingCallsWhenInitialExits(final TaskIdSettingCallable callable) throws Exception {
         // Arrange
         final Semaphore sema = new Semaphore(0);
         final Future[] futures = new Future[2];
@@ -162,14 +162,15 @@ class TaskPreservingExecutorServiceTest extends AbstractTaskScopedExtensionTest 
 
         private final AtomicInteger inside = new AtomicInteger(0);
 
-        void onEnter(@Observes @AfterTaskEnter TaskId taskId) {
+        void onEnter(@Observes @AfterTaskEnter final TaskId taskId) {
             inside.incrementAndGet();
             // System.out.println("["+System.currentTimeMillis()+"] ["+Thread.currentThread().getId()+"] Entered " + taskId);
         }
 
-        void onExit(@Observes @BeforeTaskExit TaskId taskId) {
-            if (inside.decrementAndGet() < 0)
+        void onExit(@Observes @BeforeTaskExit final TaskId taskId) {
+            if (inside.decrementAndGet() < 0) {
                 fail("Exit when not entered: " + taskId);
+            }
             // System.out.println("["+System.currentTimeMillis()+"] ["+Thread.currentThread().getId()+"] Exited " + taskId);
         }
     }

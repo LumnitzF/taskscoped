@@ -42,7 +42,7 @@ import io.github.lumnitzf.taskscoped.TaskScoped;
 public synchronized class DataHolder {
     private String value;
 
-    public void setValue(String value) {
+    public void setValue(final String value) {
         this.value = value;
     }
 
@@ -104,7 +104,7 @@ public class MyRunner implements Runnable {
 }
 ----
 
-In order to access a `@TaskPreserving` `ExecutorService` either the bean or the *producer* can be annotated with `@TaskPreserving`.
+In order to access a `@TaskPreserving` `ExecutorService` either the bean, or the *producer* can be annotated with `@TaskPreserving`.
 
 These two implementations both provide a task preserving `ExecutorService`:
 

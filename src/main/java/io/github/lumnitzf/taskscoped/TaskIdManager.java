@@ -63,14 +63,14 @@ public class TaskIdManager {
      *
      * @param taskId The new TaskId.
      */
-    static void set(TaskId taskId) {
+    static void set(final TaskId taskId) {
         CURRENT.get().set(taskId);
     }
 
     /**
      * @return proxy free instance of the current TaskId
      */
-    // Also serves as producer for injection of the current TaskId. However this instance is still wrapped in a proxy
+    // Also serves as producer for injection of the current TaskId. However, this instance is still wrapped in a proxy
     // because it does not have dependent scope
     @Produces
     @TaskScoped

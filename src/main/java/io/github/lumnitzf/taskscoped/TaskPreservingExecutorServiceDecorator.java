@@ -39,51 +39,51 @@ public class TaskPreservingExecutorServiceDecorator implements ExecutorService {
     protected final ExecutorService delegate;
 
     @Inject
-    protected TaskPreservingExecutorServiceDecorator(BeanManager beanManager,
-                                                     @Delegate @TaskPreserving ExecutorService delegate) {
+    protected TaskPreservingExecutorServiceDecorator(final BeanManager beanManager,
+                                                     @Delegate @TaskPreserving final ExecutorService delegate) {
         this.beanManager = Objects.requireNonNull(beanManager, "beanManager");
         this.delegate = Objects.requireNonNull(delegate, "delegate");
     }
 
     @Override
-    public <T> Future<T> submit(Callable<T> task) {
+    public <T> Future<T> submit(final Callable<T> task) {
         return delegate.submit(decorate(task));
     }
 
     @Override
-    public <T> Future<T> submit(Runnable task, T result) {
+    public <T> Future<T> submit(final Runnable task, final T result) {
         return delegate.submit(decorate(task), result);
     }
 
     @Override
-    public Future<?> submit(Runnable task) {
+    public Future<?> submit(final Runnable task) {
         return delegate.submit(decorate(task));
     }
 
     @Override
-    public <T> List<Future<T>> invokeAll(Collection<? extends Callable<T>> tasks) throws InterruptedException {
+    public <T> List<Future<T>> invokeAll(final Collection<? extends Callable<T>> tasks) throws InterruptedException {
         return delegate.invokeAll(decorate(tasks));
     }
 
     @Override
-    public <T> List<Future<T>> invokeAll(Collection<? extends Callable<T>> tasks, long timeout,
-                                         TimeUnit unit) throws InterruptedException {
+    public <T> List<Future<T>> invokeAll(final Collection<? extends Callable<T>> tasks, final long timeout,
+                                         final TimeUnit unit) throws InterruptedException {
         return delegate.invokeAll(decorate(tasks), timeout, unit);
     }
 
     @Override
-    public <T> T invokeAny(Collection<? extends Callable<T>> tasks) throws InterruptedException, ExecutionException {
+    public <T> T invokeAny(final Collection<? extends Callable<T>> tasks) throws InterruptedException, ExecutionException {
         return delegate.invokeAny(decorate(tasks));
     }
 
     @Override
-    public <T> T invokeAny(Collection<? extends Callable<T>> tasks, long timeout,
-                           TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {
+    public <T> T invokeAny(final Collection<? extends Callable<T>> tasks, final long timeout,
+                           final TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {
         return delegate.invokeAny(decorate(tasks), timeout, unit);
     }
 
     @Override
-    public void execute(Runnable command) {
+    public void execute(final Runnable command) {
         delegate.execute(decorate(command));
     }
 
@@ -94,10 +94,12 @@ public class TaskPreservingExecutorServiceDecorator implements ExecutorService {
      * between the invocations.
      *
      * @param runnable Runnable to decorate.
+     *
      * @return decorated Runnable, {@code null} if {@code runnable} was {@code null}
+     *
      * @see #decorate(Runnable, boolean, boolean)
      */
-    protected Runnable decorate(Runnable runnable) {
+    protected Runnable decorate(final Runnable runnable) {
         return decorate(runnable, true, true);
     }
 
@@ -109,9 +111,10 @@ public class TaskPreservingExecutorServiceDecorator implements ExecutorService {
      *                              Object) registered} for execution
      * @param unregisterOnExecution indicates if the callable should be {@link TaskScopedContext#unregister(TaskId,
      *                              Object) unregistered} before its execution.
+     *
      * @return decorated Runnable, {@code null} if {@code runnable} was {@code null}
      */
-    protected Runnable decorate(Runnable runnable, boolean registerOnCreation, boolean unregisterOnExecution) {
+    protected Runnable decorate(final Runnable runnable, final boolean registerOnCreation, final boolean unregisterOnExecution) {
         return runnable == null ? null : new TaskPreservingRunnableDecorator(getContext(), runnable, registerOnCreation, unregisterOnExecution);
     }
 
@@ -123,10 +126,12 @@ public class TaskPreservingExecutorServiceDecorator implements ExecutorService {
      *
      * @param callable Callable to decorate
      * @param <T>      type of the values returned from the tasks
+     *
      * @return decorated Callable, {@code null} if {@code callable} was {@code null}
+     *
      * @see #decorate(Callable, boolean, boolean)
      */
-    protected <T> Callable<T> decorate(Callable<T> callable) {
+    protected <T> Callable<T> decorate(final Callable<T> callable) {
         return decorate(callable, true, true);
     }
 
@@ -139,10 +144,11 @@ public class TaskPreservingExecutorServiceDecorator implements ExecutorService {
      * @param unregisterOnExecution indicates if the callable should be {@link TaskScopedContext#unregister(TaskId,
      *                              Object) unregistered} before its execution.
      * @param <T>                   the type of the value returned from the callable
+     *
      * @return decorated Callable, {@code null} if {@code callable} was {@code null}
      */
-    protected <T> Callable<T> decorate(Callable<T> callable, boolean registerOnCreation,
-                                       boolean unregisterOnExecution) {
+    protected <T> Callable<T> decorate(final Callable<T> callable, final boolean registerOnCreation,
+                                       final boolean unregisterOnExecution) {
         return callable == null ? null : new TaskPreservingCallableDecorator<>(getContext(), callable,
                 registerOnCreation,
                 unregisterOnExecution);
@@ -157,10 +163,12 @@ public class TaskPreservingExecutorServiceDecorator implements ExecutorService {
      *
      * @param tasks collection of callable to decorate.
      * @param <T>   type of values returned from the callable
+     *
      * @return collection of decorated tasks, {@code null} if {@code tasks} was {@code null}.
+     *
      * @see #decorate(Collection, boolean, boolean)
      */
-    protected <T> Collection<? extends Callable<T>> decorate(Collection<? extends Callable<T>> tasks) {
+    protected <T> Collection<? extends Callable<T>> decorate(final Collection<? extends Callable<T>> tasks) {
         return decorate(tasks, true, true);
     }
 
@@ -174,11 +182,12 @@ public class TaskPreservingExecutorServiceDecorator implements ExecutorService {
      * @param unregisterOnExecution indicates if the tasks should be {@link TaskScopedContext#unregister(TaskId,
      *                              Object) unregistered} before its execution.
      * @param <T>                   the type of values returned from the tasks
+     *
      * @return collection of decorated tasks, {@code null} if {@code tasks} was {@code null}.
      */
-    protected <T> Collection<? extends Callable<T>> decorate(Collection<? extends Callable<T>> tasks,
-                                                             boolean registerOnCreation,
-                                                             boolean unregisterOnExecution) {
+    protected <T> Collection<? extends Callable<T>> decorate(final Collection<? extends Callable<T>> tasks,
+                                                             final boolean registerOnCreation,
+                                                             final boolean unregisterOnExecution) {
         return tasks == null ? null : tasks.stream()
                 .map(task -> decorate(task, registerOnCreation, unregisterOnExecution)).collect(Collectors.toList());
     }
@@ -210,7 +219,7 @@ public class TaskPreservingExecutorServiceDecorator implements ExecutorService {
     }
 
     @Override
-    public boolean awaitTermination(long timeout, TimeUnit unit) throws InterruptedException {
+    public boolean awaitTermination(final long timeout, final TimeUnit unit) throws InterruptedException {
         return delegate.awaitTermination(timeout, unit);
     }
 }

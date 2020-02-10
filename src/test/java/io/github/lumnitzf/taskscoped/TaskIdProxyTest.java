@@ -1,7 +1,7 @@
 package io.github.lumnitzf.taskscoped;
 
 import io.github.lumnitzf.taskscoped.beans.TaskScopeEnabledBean;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 
 import javax.inject.Inject;
 import java.util.Collection;

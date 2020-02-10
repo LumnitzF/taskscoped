@@ -46,14 +46,14 @@ public class TaskId {
     }
 
     @Override
-    public boolean equals(Object o) {
+    public boolean equals(final Object o) {
         if (this == o) {
             return true;
         }
         if (o == null || getClass() != o.getClass()) {
             return false;
         }
-        TaskId taskId = (TaskId) o;
+        final TaskId taskId = (TaskId) o;
         return value.equals(taskId.value);
     }
 

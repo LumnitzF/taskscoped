@@ -58,7 +58,7 @@ public class TaskScopedContext implements Context {
      */
     private final BeanManager beanManager;
 
-    public TaskScopedContext(BeanManager beanManager) {
+    public TaskScopedContext(final BeanManager beanManager) {
         this.beanManager = Objects.requireNonNull(beanManager);
     }
 
@@ -77,12 +77,12 @@ public class TaskScopedContext implements Context {
     }
 
     @Override
-    public <T> T get(Contextual<T> contextual, CreationalContext<T> creationalContext) {
+    public <T> T get(final Contextual<T> contextual, final CreationalContext<T> creationalContext) {
         return delegate.get(contextual, creationalContext);
     }
 
     @Override
-    public <T> T get(Contextual<T> contextual) {
+    public <T> T get(final Contextual<T> contextual) {
         return delegate.get(contextual);
     }
 
@@ -100,9 +100,10 @@ public class TaskScopedContext implements Context {
      *
      * @param taskId   identifying the TaskScope
      * @param instance to be registered
+     *
      * @see #unregister(TaskId, Object)
      */
-    public void register(TaskId taskId, Object instance) {
+    public void register(final TaskId taskId, final Object instance) {
         Objects.requireNonNull(taskId, "taskId");
         Objects.requireNonNull(instance, "instance");
         LOG.debug("Registering {} for task {}", instance, taskId);
@@ -116,9 +117,10 @@ public class TaskScopedContext implements Context {
      *
      * @param taskId   identifying the TaskScope
      * @param instance to be removed
+     *
      * @see #register(TaskId, Object)
      */
-    public void unregister(TaskId taskId, Object instance) {
+    public void unregister(final TaskId taskId, final Object instance) {
         Objects.requireNonNull(taskId, "taskId");
         Objects.requireNonNull(instance, "instance");
         LOG.debug("Unregistering {} from task {}", instance, taskId);
@@ -138,17 +140,20 @@ public class TaskScopedContext implements Context {
      * Enter or create the task scope identified by {@code taskId}.
      *
      * @param taskId identifying the task scope to enter
+     *
      * @return id of the previous task scope
+     *
      * @see #exit(TaskId)
      */
-    public TaskId enter(TaskId taskId) {
+    public TaskId enter(final TaskId taskId) {
         Objects.requireNonNull(taskId, "taskId");
         TaskIdManager.set(taskId);
-        TaskId previous = delegate.enter(taskId);
+        final TaskId previous = delegate.enter(taskId);
         createIfNecessary(taskId);
         LOG.trace("Entered task {}, previous = {}", taskId, previous);
-        if (previous != taskId)
+        if (previous != taskId) {
             fireEnter(taskId);
+        }
         return previous;
     }
 
@@ -158,7 +163,7 @@ public class TaskScopedContext implements Context {
      *
      * @param previous identifier of the previous task scope. May be {@code null}
      */
-    public void exit(TaskId previous) {
+    public void exit(final TaskId previous) {
         final TaskId taskId = TaskIdManager.get().orElseThrow(Exceptions::taskScopeNotActive);
         // Fire exit event before exiting the context
         if (previous != taskId) {
@@ -174,7 +179,7 @@ public class TaskScopedContext implements Context {
         }
     }
 
-    private void createIfNecessary(TaskId taskId) {
+    private void createIfNecessary(final TaskId taskId) {
         // Hack to know that the supplier was called, to fire the initialized event outside of the synchronized block
         final boolean[] created = {false};
         synchronized (taskId.lock) {
@@ -189,7 +194,7 @@ public class TaskScopedContext implements Context {
         }
     }
 
-    private void destroyIfPossible(TaskId taskId, Consumer<TaskId> synchronizedCleanup) {
+    private void destroyIfPossible(final TaskId taskId, final Consumer<TaskId> synchronizedCleanup) {
         boolean destroyed = false;
         synchronized (taskId.lock) {
             synchronizedCleanup.accept(taskId);
@@ -204,7 +209,7 @@ public class TaskScopedContext implements Context {
         }
     }
 
-    private boolean canDestroy(TaskId taskId) {
+    private boolean canDestroy(final TaskId taskId) {
         synchronized (taskId.lock) {
             final AtomicInteger currentRunning = currentRunningCount.get(taskId);
             // If currentRunning is null, we do not have a created scope (only registered instances) so we cannot destroy it
@@ -213,7 +218,7 @@ public class TaskScopedContext implements Context {
         }
     }
 
-    private void destroy(TaskId taskId) {
+    private void destroy(final TaskId taskId) {
         synchronized (taskId.lock) {
             currentRunningCount.remove(taskId);
             registeredInstances.remove(taskId);
@@ -221,19 +226,19 @@ public class TaskScopedContext implements Context {
         }
     }
 
-    private void fireDestroyed(TaskId taskId) {
+    private void fireDestroyed(final TaskId taskId) {
         beanManager.fireEvent(taskId, new DestroyedLiteral(TaskScoped.class));
     }
 
-    private void fireInitialized(TaskId taskId) {
+    private void fireInitialized(final TaskId taskId) {
         beanManager.fireEvent(taskId, new InitializedLiteral(TaskScoped.class));
     }
 
-    private void fireEnter(TaskId taskId) {
+    private void fireEnter(final TaskId taskId) {
         beanManager.fireEvent(taskId, AfterTaskEnter.Literal.INSTANCE);
     }
 
-    private void fireExit(TaskId taskId) {
+    private void fireExit(final TaskId taskId) {
         beanManager.fireEvent(taskId, BeforeTaskExit.Literal.INSTANCE);
     }
 
@@ -246,7 +251,7 @@ public class TaskScopedContext implements Context {
     static class InitializedLiteral extends AnnotationLiteral<Initialized> implements Initialized {
         private final Class<? extends Annotation> value;
 
-        InitializedLiteral(Class<? extends Annotation> value) {
+        InitializedLiteral(final Class<? extends Annotation> value) {
             this.value = value;
         }
 
@@ -266,7 +271,7 @@ public class TaskScopedContext implements Context {
 
         private final Class<? extends Annotation> value;
 
-        DestroyedLiteral(Class<? extends Annotation> value) {
+        DestroyedLiteral(final Class<? extends Annotation> value) {
             this.value = value;
         }
 

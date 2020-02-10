@@ -9,7 +9,7 @@ public class TaskIdStore {
 
     private TaskId taskId;
 
-    public void setTaskId(TaskId taskId) {
+    public void setTaskId(final TaskId taskId) {
         this.taskId = taskId;
     }
 

@@ -38,7 +38,7 @@ abstract class AbstractTaskScopedExtensionTest {
      *
      * @param weld {@link Weld} to customize
      */
-    protected void customizeWeld(Weld weld) {
+    protected void customizeWeld(final Weld weld) {
         // Do nothing, but let children override
     }
 
@@ -51,6 +51,7 @@ abstract class AbstractTaskScopedExtensionTest {
 
     /**
      * @return all scopes that should be active
+     *
      * @implNote The {@link javax.enterprise.context.ApplicationScoped ApplicationScope} is always active.
      */
     protected Collection<Class<? extends Annotation>> getActiveScopes() {

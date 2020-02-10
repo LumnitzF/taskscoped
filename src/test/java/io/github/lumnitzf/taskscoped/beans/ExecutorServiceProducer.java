@@ -20,11 +20,11 @@ public class ExecutorServiceProducer {
     @Produces
     @ApplicationScoped
     @TaskPreserving
-    ExecutorService getExecutorService(ExecutorService defaultService) {
+    ExecutorService getExecutorService(final ExecutorService defaultService) {
         return defaultService;
     }
 
-    void destroyExecutorService(@Disposes ExecutorService service) {
+    void destroyExecutorService(@Disposes final ExecutorService service) {
         service.shutdown();
     }
 }

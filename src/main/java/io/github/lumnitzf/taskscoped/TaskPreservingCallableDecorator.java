@@ -9,6 +9,7 @@ import java.util.concurrent.Callable;
  * TaskScope.
  *
  * @param <V> the result type of method {@code call}
+ *
  * @author Fritz Lumnitz
  */
 class TaskPreservingCallableDecorator<V> implements Callable<V> {
@@ -34,8 +35,8 @@ class TaskPreservingCallableDecorator<V> implements Callable<V> {
      */
     private final boolean unregisterOnExecution;
 
-    TaskPreservingCallableDecorator(TaskScopedContext context, Callable<V> delegate, boolean registerOnCreation,
-                                    boolean unregisterOnExecution) {
+    TaskPreservingCallableDecorator(final TaskScopedContext context, final Callable<V> delegate, final boolean registerOnCreation,
+                                    final boolean unregisterOnExecution) {
         Objects.requireNonNull(context, "context");
         Objects.requireNonNull(delegate, "delegate");
         this.taskId = TaskIdManager.get().orElseThrow(Exceptions::taskScopeNotActive);

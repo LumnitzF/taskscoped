@@ -13,7 +13,7 @@ class Exceptions {
     }
 
     /**
-     * @return A {@link ContextNotActiveException} with message that the TaskScope is not active
+     * @return A {@link ContextNotActiveException} with the message that the TaskScope is not active
      */
     static ContextNotActiveException taskScopeNotActive() {
         return new ContextNotActiveException("TaskScope is not active");

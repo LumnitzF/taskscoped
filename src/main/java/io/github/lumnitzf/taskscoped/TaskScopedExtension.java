@@ -25,14 +25,14 @@ import java.util.function.Function;
  */
 public class TaskScopedExtension implements Extension {
 
-    private static Logger LOG = LoggerFactory.getLogger(TaskScopedExtension.class);
+    private static final Logger LOG = LoggerFactory.getLogger(TaskScopedExtension.class);
 
-    void beforeBeanDiscovery(@Observes BeforeBeanDiscovery bbd) {
+    void beforeBeanDiscovery(@Observes final BeforeBeanDiscovery bbd) {
         LOG.info("Registering task scope");
         bbd.addScope(TaskScoped.class, true, false);
     }
 
-    void processExecutorServiceProducer(@Observes ProcessProducer<?, ExecutorService> pp, BeanManager beanManager) {
+    void processExecutorServiceProducer(@Observes final ProcessProducer<?, ExecutorService> pp, final BeanManager beanManager) {
         if (pp.getAnnotatedMember().isAnnotationPresent(TaskPreserving.class)) {
             final Producer<ExecutorService> producer = pp.getProducer();
             LOG.info("Adding task preserving capability to {}", producer);
@@ -41,8 +41,8 @@ public class TaskScopedExtension implements Extension {
         }
     }
 
-    void processManagedExecutorServiceProducer(@Observes ProcessProducer<?, ManagedExecutorService> pp,
-                                               BeanManager beanManager) {
+    void processManagedExecutorServiceProducer(@Observes final ProcessProducer<?, ManagedExecutorService> pp,
+                                               final BeanManager beanManager) {
         if (pp.getAnnotatedMember().isAnnotationPresent(TaskPreserving.class)) {
             final Producer<ManagedExecutorService> producer = pp.getProducer();
             LOG.info("Adding task preserving capability to {}", producer);
@@ -51,7 +51,7 @@ public class TaskScopedExtension implements Extension {
         }
     }
 
-    void afterBeanDiscovery(@Observes AfterBeanDiscovery abd, BeanManager beanManager) {
+    void afterBeanDiscovery(@Observes final AfterBeanDiscovery abd, final BeanManager beanManager) {
         LOG.info("Adding TaskScopedContext");
         abd.addContext(new TaskScopedContext(beanManager));
     }
@@ -61,19 +61,19 @@ public class TaskScopedExtension implements Extension {
         private final Producer<X> delegate;
         private final Function<X, X> producerWrapper;
 
-        private DelegateProducer(Producer<X> delegate, Function<X, X> producerWrapper) {
+        private DelegateProducer(final Producer<X> delegate, final Function<X, X> producerWrapper) {
             this.delegate = delegate;
             this.producerWrapper = producerWrapper;
         }
 
         @Override
-        public X produce(CreationalContext<X> ctx) {
+        public X produce(final CreationalContext<X> ctx) {
             // Dependent producers may return null, so we also return null instead of creating the delegate (which will throw an exception)
             return Optional.ofNullable(delegate.produce(ctx)).map(producerWrapper).orElse(null);
         }
 
         @Override
-        public void dispose(X instance) {
+        public void dispose(final X instance) {
             delegate.dispose(instance);
         }
 

@@ -10,7 +10,10 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 import java.util.concurrent.ExecutorService;
 
-import static java.lang.annotation.ElementType.*;
+import static java.lang.annotation.ElementType.FIELD;
+import static java.lang.annotation.ElementType.METHOD;
+import static java.lang.annotation.ElementType.PARAMETER;
+import static java.lang.annotation.ElementType.TYPE;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 /**
@@ -48,8 +51,8 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
  *
  * @author Fritz Lumnitz
  * @implNote The default behavior expects every Runnable or Callable to be executed exactly once. Otherwise the moment
- * the TaskScope should be destroyed cannot be determined. In case a different behavior is desired, the application is
- * required to implement its own decorator, which registers and unregisters the tasks correctly.
+ *         the TaskScope should be destroyed cannot be determined. In case a different behavior is desired, the application is
+ *         required to implement its own decorator, which registers and unregisters the tasks correctly.
  */
 @Qualifier
 @Retention(value = RUNTIME)

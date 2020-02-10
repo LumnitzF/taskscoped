@@ -17,7 +17,7 @@ public class TaskScopeEnabledBean {
     @Inject
     public TaskIdManager taskIdManager;
 
-    public <E extends Throwable> void doInTaskScope(ThrowingConsumer<TaskScopeEnabledBean, E> consumer) throws E {
+    public <E extends Throwable> void doInTaskScope(final ThrowingConsumer<TaskScopeEnabledBean, E> consumer) throws E {
         consumer.accept(this);
     }
 
